@@ -143,6 +143,10 @@ body {
 
 /* Buttons */
 .primary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   background: var(--accent);
   color: #fff;
   border: none;
@@ -175,7 +179,7 @@ body {
 }
 
 .scenarios-right {
-  flex: 0 0 320px;
+  flex: 0 0 550px;
   position: sticky;
   top: 16px;
 }
@@ -201,6 +205,11 @@ body {
   cursor: pointer;
   transition: all 0.2s;
   font-size: 0.9rem;
+}
+
+.scenario-tab svg {
+  display: block;
+  margin: 0 auto;
 }
 
 .scenario-tab span {
