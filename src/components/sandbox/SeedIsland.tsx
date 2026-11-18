@@ -94,6 +94,7 @@ function VerifyForm({
   realWords,
   verifyIndices,
   paperText,
+  onPaperChange,
   onVerified,
   onError,
   onSeeAgain,
@@ -101,6 +102,7 @@ function VerifyForm({
   realWords: string[];
   verifyIndices: readonly [number, number, number];
   paperText: string;
+  onPaperChange: (v: string) => void;
   onVerified: () => void;
   onError: () => void;
   onSeeAgain: () => void;
@@ -182,11 +184,19 @@ function VerifyForm({
           </div>
         </>
       ) : (
-        <div className="flex items-start gap-2 rounded-lg border border-[var(--border)] bg-[var(--bg-card)]/50 px-4 py-3">
-          <XCircle size={18} className="text-[var(--text-dim)] shrink-0 mt-0.5" />
-          <p className="text-sm text-[var(--text)]">
-            Paste your paper (all 12 words) above to enable verification.
-          </p>
+        <div className="flex flex-col gap-2">
+          <PaperBlock
+            title="Your paper — paste the 12 words here"
+            note="Simulates writing the seed on a physical sheet of paper."
+            value={paperText}
+            onChange={onPaperChange}
+          />
+          <div className="flex items-start gap-2 rounded-lg border border-[var(--border)] bg-[var(--bg-card)]/50 px-4 py-3">
+            <XCircle size={18} className="text-[var(--text-dim)] shrink-0 mt-0.5" />
+            <p className="text-sm text-[var(--text)]">
+              Paste your paper here to enable verification.
+            </p>
+          </div>
         </div>
       )}
 
@@ -398,7 +408,7 @@ export default function SeedIsland({ onIdentityReady }: SeedIslandProps) {
               ))}
             </div>
             <button onClick={handleCopyAll} className="primary-btn self-center">
-              <Copy size={16} /> Copy
+              <Copy size={16} /> Copy All
             </button>
           </motion.div>
         )}
@@ -418,7 +428,7 @@ export default function SeedIsland({ onIdentityReady }: SeedIslandProps) {
               onChange={setPaperText}
             />
             <button onClick={handleHide} className="primary-btn self-center">
-              Hide & Verify
+              Verify Seed on Paper
             </button>
           </motion.div>
         )}
@@ -430,6 +440,7 @@ export default function SeedIsland({ onIdentityReady }: SeedIslandProps) {
           realWords={generatedWords}
           verifyIndices={state.verifyIndices}
           paperText={paperText}
+          onPaperChange={setPaperText}
           onVerified={handleVerified}
           onError={handleVerifyError}
           onSeeAgain={handleBackToRevealed}
