@@ -81,7 +81,31 @@ export default function App() {
       <main className="app-main">
         {/* Step 1: Seed Island */}
         <section className="step-section">
-          <SeedIsland onIdentityReady={handleIdentityReady} />
+          <SeedIsland onIdentityReady={handleIdentityReady}>
+            {identity && (
+              <>
+                <p className="step-desc">
+                  Your Identity is ready. Pick a scenario to run a live protocol
+                  flow using <code>@me2em/core</code>,{' '}
+                  <code>@me2em/solana</code>, and <code>@me2em/x402</code>.
+                </p>
+                <div className="scenario-tabs">
+                  {(Object.keys(scenarioMeta) as ScenarioId[]).map((id) => (
+                    <button
+                      key={id}
+                      className={`scenario-tab ${activeScenario === id ? 'active' : ''}`}
+                      onClick={() => handleRunScenario(id)}
+                      disabled={scenarioMap[id].loading}
+                    >
+                      {scenarioMeta[id].icon}
+                      <span>{scenarioMeta[id].label}</span>
+                      <small>{scenarioMeta[id].desc}</small>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </SeedIsland>
         </section>
 
         {/* Step 2: Scenarios + Log side by side */}
@@ -92,28 +116,6 @@ export default function App() {
             className="scenarios-layout"
           >
             <div className="scenarios-left">
-              <h2>Protocol Scenarios</h2>
-              <p className="step-desc">
-                Your Identity is ready. Pick a scenario to run a live protocol
-                flow using <code>@me2em/core</code>,{' '}
-                <code>@me2em/solana</code>, and <code>@me2em/x402</code>.
-              </p>
-
-              <div className="scenario-tabs">
-                {(Object.keys(scenarioMeta) as ScenarioId[]).map((id) => (
-                  <button
-                    key={id}
-                    className={`scenario-tab ${activeScenario === id ? 'active' : ''}`}
-                    onClick={() => handleRunScenario(id)}
-                    disabled={scenarioMap[id].loading}
-                  >
-                    {scenarioMeta[id].icon}
-                    <span>{scenarioMeta[id].label}</span>
-                    <small>{scenarioMeta[id].desc}</small>
-                  </button>
-                ))}
-              </div>
-
               {activeScenario && (
                 <div className="scenario-content">
                   {activeScenario === 'human' && (

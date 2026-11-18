@@ -275,9 +275,10 @@ type PanelState = 'idle' | 'generating' | 'hidden' | 'revealed' | 'copied' | 've
 
 interface SeedIslandProps {
   onIdentityReady: (identity: Identity, seedBytes: Uint8Array) => void;
+  children?: React.ReactNode;
 }
 
-export default function SeedIsland({ onIdentityReady }: SeedIslandProps) {
+export default function SeedIsland({ onIdentityReady, children }: SeedIslandProps) {
   const [state, dispatch] = useReducer(sandboxReducer, initialState);
   const [generatedWords, setGeneratedWords] = useState<string[] | null>(null);
   const [paperText, setPaperText] = useState('');
@@ -511,6 +512,8 @@ export default function SeedIsland({ onIdentityReady }: SeedIslandProps) {
               </div>
             </div>
           )}
+
+          {children}
 
           <button
             onClick={handleRestart}
