@@ -856,3 +856,25 @@ body {
   color: #4ade80;
   margin-bottom: 12px;
 }
+
+/* ── Seed panel (no numbers, just words) ── */
+.seed-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  padding: 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.seed-word {
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  color: var(--text);
+  padding: 4px 10px;
+  background: var(--surface);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}

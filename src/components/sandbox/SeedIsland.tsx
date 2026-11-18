@@ -40,24 +40,6 @@ export function parsePaperWords(raw: string): string[] {
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
-function MaskedWordBadge({ index }: { index: number }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bg-card)] border border-[var(--border)] px-3 py-1.5 text-xs font-mono text-[var(--text-dim)]">
-      <span className="text-[var(--text-subtle)] font-semibold">{index + 1}.</span>
-      <span>••••••••</span>
-    </span>
-  );
-}
-
-function RevealedWordBadge({ index, word }: { index: number; word: string }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bg-card)] border border-[var(--border)] px-3 py-1.5 text-xs font-mono text-[var(--text)]">
-      <span className="text-[var(--text-subtle)] font-semibold">{index + 1}.</span>
-      <span>{word}</span>
-    </span>
-  );
-}
-
 function PaperWordBadge({
   index,
   word,
@@ -395,17 +377,12 @@ export default function SeedIsland({ onIdentityReady }: SeedIslandProps) {
         )}
 
         {panel === 'hidden' && generatedWords && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-4">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-4 items-center">
             <p className="text-sm text-[var(--text)] text-center">
               Your seed has been generated. Keep it secret.
             </p>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 justify-items-center">
-              {generatedWords.map((_, i) => (
-                <MaskedWordBadge key={i} index={i} />
-              ))}
-            </div>
-            <button onClick={handleReveal} className="primary-btn self-center">
-              <Eye size={16} /> Reveal Seed
+            <button onClick={handleReveal} className="primary-btn">
+              <Eye size={18} /> Reveal Seed
             </button>
           </motion.div>
         )}
@@ -415,34 +392,24 @@ export default function SeedIsland({ onIdentityReady }: SeedIslandProps) {
             <p className="text-sm text-[var(--text)] text-center">
               Write these words down in order. This is your only backup.
             </p>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 justify-items-center">
+            <div className="seed-panel">
               {generatedWords.map((word, i) => (
-                <RevealedWordBadge key={i} index={i} word={word} />
+                <span key={i} className="seed-word">{word}</span>
               ))}
             </div>
-            <div className="flex flex-wrap gap-3 justify-center">
-              <button onClick={handleCopyAll} className="secondary-btn">
-                <Copy size={14} /> Copy All
-              </button>
-              <button onClick={handleHide} className="secondary-btn">
-                Hide & Verify
-              </button>
-            </div>
+            <button onClick={handleCopyAll} className="primary-btn self-center">
+              <Copy size={16} /> Copy
+            </button>
           </motion.div>
         )}
 
         {panel === 'copied' && generatedWords && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-4">
-            <p className="text-sm text-[var(--text)] text-center">
-              Write these words down in order. This is your only backup.
-            </p>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 justify-items-center">
+            <p className="text-sm font-medium text-[var(--text)] text-center">✓ Copied to clipboard</p>
+            <div className="seed-panel">
               {generatedWords.map((word, i) => (
-                <RevealedWordBadge key={i} index={i} word={word} />
+                <span key={i} className="seed-word">{word}</span>
               ))}
-            </div>
-            <div className="flex flex-col gap-2 items-center">
-              <p className="text-sm font-medium text-[var(--text)]">✓ Copied to clipboard</p>
             </div>
             <PaperBlock
               title="Your paper — paste the 12 words here"
