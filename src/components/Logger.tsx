@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
-import { logger, type LogEntry } from '../utils/logger';
+import { logger, type LogEntry, type ScenarioTag } from '../utils/logger';
 
-export default function Logger() {
+interface LoggerProps {
+  scenario: ScenarioTag;
+}
+
+export default function Logger({ scenario }: LoggerProps) {
   const [logs, setLogs] = useState<LogEntry[]>([]);
 
   useEffect(() => {
@@ -11,14 +15,18 @@ export default function Logger() {
     return unsubscribe;
   }, []);
 
+  const filtered = logs.filter((l) => l.scenario === scenario);
+
   return (
     <div className="logger-container">
       <h3>Crypto Operation Log</h3>
       <div className="log-output">
-        {logs.length === 0 && (
-          <div className="log-empty">No operations yet. Run a scenario to see the log.</div>
+        {filtered.length === 0 && (
+          <div className="log-empty">
+            No operations yet. Run a scenario to see the log.
+          </div>
         )}
-        {logs.map((entry) => (
+        {filtered.map((entry) => (
           <div key={entry.id} className={`log-line log-${entry.level}`}>
             <span className="log-time">[{entry.timestamp}]</span>
             <span className="log-msg">{entry.message}</span>

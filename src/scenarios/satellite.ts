@@ -41,6 +41,7 @@ export async function runSatelliteScenario(
   identity: Identity,
   seedBytes: Uint8Array,
 ): Promise<SatelliteResult> {
+  logger.setScenario('satellite');
   // 1. Derive satellite Handle (attested by operator)
   logger.info('Deriving satellite Handle "sat-eo-07"…');
   const satHandle: Handle = await identity.deriveHandle('sat-eo-07', {

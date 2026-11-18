@@ -18,6 +18,7 @@ export interface AgentResult {
 }
 
 export async function runAgentScenario(identity: Identity): Promise<AgentResult> {
+  logger.setScenario('agent');
   const handleName = 'agent-host';
   const agentName = 'travel-planner';
 

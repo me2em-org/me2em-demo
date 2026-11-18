@@ -294,6 +294,7 @@ export default function SeedIsland({ onIdentityReady }: SeedIslandProps) {
 
   const handleGenerate = useCallback(async () => {
     dispatch({ type: 'startGenerating' });
+    logger.setScenario('seed');
     logger.info('Generating 12-word BIP39 seed phrase…');
     const phrase = generateSeedPhrase(128);
     setGeneratedWords(phrase);
@@ -320,6 +321,7 @@ export default function SeedIsland({ onIdentityReady }: SeedIslandProps) {
   const handleVerified = useCallback(async () => {
     if (!generatedWords) return;
     try {
+      logger.setScenario('seed');
       logger.info('Deriving 64-byte BIP39 seed (PBKDF2-HMAC-SHA512)…');
       const seed = await get64ByteSeedFromMnemonic(generatedWords);
 

@@ -84,71 +84,79 @@ export default function App() {
           <SeedIsland onIdentityReady={handleIdentityReady} />
         </section>
 
-        {/* Step 2: Scenarios (shown after identity created) */}
+        {/* Step 2: Scenarios + Log side by side */}
         {identity && (
           <motion.section
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="step-section"
+            className="scenarios-layout"
           >
-            <h2>Protocol Scenarios</h2>
-            <p className="step-desc">
-              Your Identity is ready. Pick a scenario to run a live protocol
-              flow using <code>@me2em/core</code>,{' '}
-              <code>@me2em/solana</code>, and <code>@me2em/x402</code>.
-            </p>
+            <div className="scenarios-left">
+              <h2>Protocol Scenarios</h2>
+              <p className="step-desc">
+                Your Identity is ready. Pick a scenario to run a live protocol
+                flow using <code>@me2em/core</code>,{' '}
+                <code>@me2em/solana</code>, and <code>@me2em/x402</code>.
+              </p>
 
-            <div className="scenario-tabs">
-              {(Object.keys(scenarioMeta) as ScenarioId[]).map((id) => (
-                <button
-                  key={id}
-                  className={`scenario-tab ${activeScenario === id ? 'active' : ''}`}
-                  onClick={() => handleRunScenario(id)}
-                  disabled={scenarioMap[id].loading}
-                >
-                  {scenarioMeta[id].icon}
-                  <span>{scenarioMeta[id].label}</span>
-                  <small>{scenarioMeta[id].desc}</small>
-                </button>
-              ))}
+              <div className="scenario-tabs">
+                {(Object.keys(scenarioMeta) as ScenarioId[]).map((id) => (
+                  <button
+                    key={id}
+                    className={`scenario-tab ${activeScenario === id ? 'active' : ''}`}
+                    onClick={() => handleRunScenario(id)}
+                    disabled={scenarioMap[id].loading}
+                  >
+                    {scenarioMeta[id].icon}
+                    <span>{scenarioMeta[id].label}</span>
+                    <small>{scenarioMeta[id].desc}</small>
+                  </button>
+                ))}
+              </div>
+
+              {activeScenario && (
+                <div className="scenario-content">
+                  {activeScenario === 'human' && (
+                    <ScenarioHuman
+                      result={humanScenario.result}
+                      loading={humanScenario.loading}
+                    />
+                  )}
+                  {activeScenario === 'satellite' && (
+                    <ScenarioSatellite
+                      result={satelliteScenario.result}
+                      loading={satelliteScenario.loading}
+                    />
+                  )}
+                  {activeScenario === 'agent' && (
+                    <ScenarioAgent
+                      result={agentScenario.result}
+                      loading={agentScenario.loading}
+                    />
+                  )}
+                </div>
+              )}
+
+              <div className="scenario-hint">
+                <ChevronRight size={14} />
+                <span>
+                  Each scenario runs real protocol code — no mocks.
+                </span>
+              </div>
             </div>
 
-            {activeScenario && (
-              <div className="scenario-content">
-                {activeScenario === 'human' && (
-                  <ScenarioHuman
-                    result={humanScenario.result}
-                    loading={humanScenario.loading}
-                  />
-                )}
-                {activeScenario === 'satellite' && (
-                  <ScenarioSatellite
-                    result={satelliteScenario.result}
-                    loading={satelliteScenario.loading}
-                  />
-                )}
-                {activeScenario === 'agent' && (
-                  <ScenarioAgent
-                    result={agentScenario.result}
-                    loading={agentScenario.loading}
-                  />
-                )}
-              </div>
-            )}
-
-            <div className="scenario-hint">
-              <ChevronRight size={14} />
-              <span>
-                Each scenario runs real protocol code — no mocks. Check the
-                crypto log below for step-by-step details.
-              </span>
+            <div className="scenarios-right">
+              <Logger scenario={activeScenario ?? 'seed'} />
             </div>
           </motion.section>
         )}
 
-        <div className="log-section">
-          <Logger />
-        </div>
+        {/* Seed log (before identity is created) */}
+        {!identity && (
+          <div className="log-section">
+            <Logger scenario="seed" />
+          </div>
+        )}
       </main>
 
       <footer className="app-footer">

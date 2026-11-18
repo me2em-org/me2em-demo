@@ -77,6 +77,7 @@ export async function runHumanScenario(
   identity: Identity,
   seedBytes: Uint8Array,
 ): Promise<HumanResult> {
+  logger.setScenario('human');
   const contexts = ['work', 'family', 'gym'];
 
   logger.info(

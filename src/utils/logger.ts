@@ -1,15 +1,23 @@
 export type LogLevel = 'info' | 'success' | 'warn' | 'error';
 
+export type ScenarioTag = 'seed' | 'human' | 'satellite' | 'agent';
+
 export type LogEntry = {
   id: string;
   timestamp: string;
   level: LogLevel;
   message: string;
   data?: string;
+  scenario: ScenarioTag;
 };
 
 class Logger {
   private listeners: ((entry: LogEntry) => void)[] = [];
+  private currentScenario: ScenarioTag = 'seed';
+
+  setScenario(tag: ScenarioTag) {
+    this.currentScenario = tag;
+  }
 
   log(level: LogLevel, message: string, data?: string) {
     const entry: LogEntry = {
@@ -17,7 +25,8 @@ class Logger {
       timestamp: new Date().toLocaleTimeString(),
       level,
       message,
-      data
+      data,
+      scenario: this.currentScenario,
     };
     console.log(`[Me2em ${level.toUpperCase()}]`, message, data || '');
     this.listeners.forEach(listener => listener(entry));

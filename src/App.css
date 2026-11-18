@@ -27,9 +27,9 @@ body {
 }
 
 .app {
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 24px 16px;
+  padding: 24px 24px;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -156,6 +156,24 @@ body {
 
 .primary-btn:hover {
   background: var(--accent-light);
+}
+
+/* Scenarios layout (side-by-side) */
+.scenarios-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.scenarios-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.scenarios-right {
+  flex: 0 0 320px;
+  position: sticky;
+  top: 16px;
 }
 
 /* Scenario tabs */
@@ -888,6 +906,18 @@ body {
 .verify-disabled-hint {
   font-size: 0.78rem;
   color: var(--text-dim);
+}
+
+/* Mobile: stack scenarios and log vertically */
+@media (max-width: 768px) {
+  .scenarios-layout {
+    flex-direction: column;
+  }
+  .scenarios-right {
+    flex: none;
+    width: 100%;
+    position: static;
+  }
 }
 
 /* ── Human scenario: root identity card ── */
