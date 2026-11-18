@@ -1,11 +1,10 @@
 import { useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Fingerprint,
   Briefcase,
   Satellite,
   Bot,
-  RefreshCw,
   ChevronRight,
 } from 'lucide-react';
 import { Identity } from '@me2em/core';

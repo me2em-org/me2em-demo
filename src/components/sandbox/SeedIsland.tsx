@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useReducer, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Fingerprint,
   Copy,
@@ -7,9 +7,6 @@ import {
   CheckCircle2,
   XCircle,
   Loader2,
-  Briefcase,
-  Satellite,
-  Bot,
   RefreshCw,
 } from 'lucide-react';
 import { Identity, generateSeedPhrase, get64ByteSeedFromMnemonic } from '@me2em/core';
@@ -19,7 +16,7 @@ import {
   initialState,
   canCopy,
   shouldWarnBeforeUnload,
-  type SandboxStatus,
+  
 } from './sandboxState';
 
 // ─── Parse paper text into words ──────────────────────────────────────────────
@@ -122,8 +119,8 @@ export default function SeedIsland({ onIdentityReady }: SeedIslandProps) {
   const [state, dispatch] = useReducer(sandboxReducer, initialState);
   const [generatedWords, setGeneratedWords] = useState<string[] | null>(null);
   const [paperText, setPaperText] = useState('');
-  const [identity, setIdentity] = useState<Identity | null>(null);
-  const [seedBytes, setSeedBytes] = useState<Uint8Array | null>(null);
+  const [, setIdentity] = useState<Identity | null>(null);
+  const [, setSeedBytes] = useState<Uint8Array | null>(null);
   const copyRef = useRef(false);
   const identityRef = useRef<Identity | null>(null);
 
