@@ -168,6 +168,10 @@ body {
 .scenarios-left {
   flex: 1;
   min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
 }
 
 .scenarios-right {
@@ -756,7 +760,7 @@ body {
 .log-output {
   font-family: var(--mono);
   font-size: 0.75rem;
-  max-height: 200px;
+  max-height: 480px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
