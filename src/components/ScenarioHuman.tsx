@@ -6,13 +6,11 @@ import {
   CheckCircle2,
   Copy,
   Check,
-  AlertTriangle,
   Wallet,
   Mail,
 } from 'lucide-react';
 import type {
   HumanResult,
-  HumanRootIdentity,
   HumanHandleInfo,
 } from '../scenarios/human';
 
@@ -62,32 +60,6 @@ function KeyRow({
   );
 }
 
-function RootIdentityCard({ root }: { root: HumanRootIdentity }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="identity-card"
-    >
-      <div className="identity-avatar">I</div>
-      <div className="identity-title">Root Identity</div>
-      <div className="identity-subtitle">
-        One seed → one master keypair (Ed25519)
-      </div>
-      <KeyRow label="Public Key" value={root.pubKeyHex} />
-      <KeyRow label="Private Key — master secret" value={root.privKeyHex} red />
-      <div className="privkey-warning">
-        <AlertTriangle size={16} className="shrink-0 mt-0.5" />
-        <span>
-          In real life a private key is <b>never published or shown</b> — it is
-          the master secret, on the same level of sensitivity as your 12-word
-          seed. Displayed here only so you can see what must never leave the
-          device.
-        </span>
-      </div>
-    </motion.div>
-  );
-}
 
 function HandleCard({ ctx }: { ctx: HumanHandleInfo }) {
   const [expanded, setExpanded] = useState(false);
@@ -191,8 +163,6 @@ export default function ScenarioHuman({ result, loading }: Props) {
           </p>
         </div>
       </div>
-
-      <RootIdentityCard root={result.root} />
 
       <p className="derive-note">
         ↓ Each Handle is derived deterministically from the root keypair —

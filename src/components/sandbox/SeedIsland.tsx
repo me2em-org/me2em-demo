@@ -9,7 +9,7 @@ import {
   Loader2,
   RefreshCw,
 } from 'lucide-react';
-import { Identity, generateSeedPhrase, get64ByteSeedFromMnemonic } from '@me2em/core';
+import { Identity, crypto as coreCrypto, generateSeedPhrase, get64ByteSeedFromMnemonic } from '@me2em/core';
 import { logger } from '../../utils/logger';
 import {
   sandboxReducer,
@@ -17,6 +17,10 @@ import {
   canCopy,
   shouldWarnBeforeUnload,
 } from './sandboxState';
+
+function toHex(bytes: Uint8Array): string {
+  return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
 
 // ─── Parse paper text into words ──────────────────────────────────────────────
 export function parsePaperWords(raw: string): string[] {
@@ -278,6 +282,7 @@ export default function SeedIsland({ onIdentityReady }: SeedIslandProps) {
   const [generatedWords, setGeneratedWords] = useState<string[] | null>(null);
   const [paperText, setPaperText] = useState('');
   const identityRef = useRef<Identity | null>(null);
+  const rootPrivKeyRef = useRef<Uint8Array | null>(null);
   const copyRef = useRef(false);
 
   // beforeunload guard
@@ -328,6 +333,11 @@ export default function SeedIsland({ onIdentityReady }: SeedIslandProps) {
       logger.info('Creating root Identity from 64-byte seed…');
       const id = await Identity.fromSeed(seed);
       identityRef.current = id;
+      try {
+        rootPrivKeyRef.current = coreCrypto.deriveRootKey(seed);
+      } catch {
+        rootPrivKeyRef.current = null;
+      }
 
       const pubKeyHex = Array.from(id.getPublicKey())
         .map((b: number) => b.toString(16).padStart(2, '0'))
@@ -469,6 +479,39 @@ export default function SeedIsland({ onIdentityReady }: SeedIslandProps) {
             seed. Handles, SubHandles, and wallets are derived deterministically
             from this key.
           </p>
+
+          {identityRef.current && (
+            <div className="identity-card w-full max-w-md">
+              <div className="identity-avatar">I</div>
+              <div className="identity-info">
+                <div className="identity-title">Root Identity</div>
+                <div className="identity-subtitle">
+                  Ed25519 keypair · derived from your 12-word seed
+                </div>
+                <div className="identity-keys">
+                  <div className="key-row">
+                    <span className="key-label">Public Key</span>
+                    <code className="key-value">
+                      {toHex(identityRef.current.getPublicKey())}
+                    </code>
+                  </div>
+                  {rootPrivKeyRef.current && (
+                    <div className="key-row">
+                      <span className="key-label">Private Key — master secret</span>
+                      <code className="key-value key-value--red">
+                        {toHex(rootPrivKeyRef.current)}
+                      </code>
+                    </div>
+                  )}
+                </div>
+                <p className="identity-warn">
+                  The private key is the master secret for your entire identity.
+                  Never share it.
+                </p>
+              </div>
+            </div>
+          )}
+
           <button
             onClick={handleRestart}
             className="text-sm text-[var(--text-dim)] hover:text-[var(--text)] underline underline-offset-2 transition-colors"
