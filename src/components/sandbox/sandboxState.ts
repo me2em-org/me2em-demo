@@ -47,7 +47,7 @@ function pickThreeDistinct(rng: () => number): [number, number, number] {
   const used = new Set<number>();
   const result: number[] = [];
   while (result.length < 3) {
-    const n = Math.floor(rng() * 24);
+    const n = Math.floor(rng() * 12);
     if (used.has(n)) continue;
     used.add(n);
     result.push(n);

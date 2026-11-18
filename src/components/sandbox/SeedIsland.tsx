@@ -16,7 +16,6 @@ import {
   initialState,
   canCopy,
   shouldWarnBeforeUnload,
-  
 } from './sandboxState';
 
 // ─── Parse paper text into words ──────────────────────────────────────────────
@@ -107,241 +106,6 @@ function PaperBlock({
   );
 }
 
-// ─── Main component ────────────────────────────────────────────────────────────
-
-type PanelState = 'idle' | 'generating' | 'hidden' | 'revealed' | 'copied' | 'verify' | 'created';
-
-interface SeedIslandProps {
-  onIdentityReady: (identity: Identity, seedBytes: Uint8Array) => void;
-}
-
-export default function SeedIsland({ onIdentityReady }: SeedIslandProps) {
-  const [state, dispatch] = useReducer(sandboxReducer, initialState);
-  const [generatedWords, setGeneratedWords] = useState<string[] | null>(null);
-  const [paperText, setPaperText] = useState('');
-  const [, setIdentity] = useState<Identity | null>(null);
-  const [, setSeedBytes] = useState<Uint8Array | null>(null);
-  const copyRef = useRef(false);
-  const identityRef = useRef<Identity | null>(null);
-
-  // beforeunload guard
-  useEffect(() => {
-    if (shouldWarnBeforeUnload(state.status)) {
-      const handler = (e: BeforeUnloadEvent) => {
-        e.preventDefault();
-        (e as unknown as { returnValue: string }).returnValue = '';
-      };
-      window.addEventListener('beforeunload', handler);
-      return () => window.removeEventListener('beforeunload', handler);
-    }
-  }, [state.status]);
-
-  const handleGenerate = useCallback(async () => {
-    dispatch({ type: 'startGenerating' });
-    logger.info('Generating 24-word BIP39 seed phrase…');
-    const phrase = generateSeedPhrase(128);
-    setGeneratedWords(phrase);
-    dispatch({ type: 'phraseGenerated' });
-    logger.success('Seed phrase generated', phrase.join(' '));
-  }, []);
-
-  const handleReveal = useCallback(() => {
-    dispatch({ type: 'reveal' });
-  }, []);
-
-  const handleCopyAll = useCallback(() => {
-    if (!copyRef.current && generatedWords && canCopy(state)) {
-      copyRef.current = true;
-      navigator.clipboard.writeText(generatedWords.join(' ')).catch(() => {});
-      dispatch({ type: 'copyUsed' });
-    }
-  }, [generatedWords, state]);
-
-  const handleHide = useCallback(() => {
-    dispatch({ type: 'hide' });
-  }, []);
-
-  const handleVerified = useCallback(async () => {
-    if (!generatedWords) return;
-    try {
-      logger.info('Deriving 64-byte BIP39 seed (PBKDF2-HMAC-SHA512)…');
-      const seed = await get64ByteSeedFromMnemonic(generatedWords);
-      setSeedBytes(seed);
-
-      logger.info('Creating root Identity from 64-byte seed…');
-      const id = await Identity.fromSeed(seed);
-      identityRef.current = id;
-      setIdentity(id);
-
-      const pubKeyHex = Array.from(id.getPublicKey())
-        .map((b: number) => b.toString(16).padStart(2, '0'))
-        .join('');
-      logger.success('Identity created', `pub: ${pubKeyHex.slice(0, 16)}…`);
-
-      dispatch({ type: 'verifyPassed' });
-      onIdentityReady(id, seed);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      logger.error('Identity creation failed', msg);
-      dispatch({ type: 'verifyFailed' });
-    }
-  }, [generatedWords, onIdentityReady]);
-
-  const handleVerifyError = useCallback(() => {
-    dispatch({ type: 'verifyFailed' });
-  }, []);
-
-  const handleBackToRevealed = useCallback(() => {
-    dispatch({ type: 'backToRevealed' });
-  }, []);
-
-  const handleRestart = useCallback(() => {
-    if (identityRef.current) {
-      identityRef.current.dispose();
-      identityRef.current = null;
-    }
-    setIdentity(null);
-    setSeedBytes(null);
-    setGeneratedWords(null);
-    setPaperText('');
-    copyRef.current = false;
-    dispatch({ type: 'restart' });
-  }, []);
-
-  const panel: PanelState =
-    state.status === 'revealed' && state.copyUsed ? 'copied' : state.status;
-
-  return (
-    <div className="seed-island">
-      {/* ── Mentor Panel ── */}
-      <div className="mentor-panel" role="status" aria-live="polite">
-        {panel === 'idle' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-4 items-center">
-            <p className="text-sm text-[var(--text-dim)] text-center max-w-md">
-              Your Me2eM Identity is generated from a 24-word BIP39 seed.
-              This demo runs entirely in your browser — nothing leaves your device.
-            </p>
-            <button
-              onClick={handleGenerate}
-              className="primary-btn"
-            >
-              <Fingerprint size={18} />
-              Generate My Identity
-            </button>
-          </motion.div>
-        )}
-
-        {panel === 'generating' && (
-          <p className="text-[var(--text-dim)] text-center">
-            <Loader2 size={16} className="inline spin" /> Generating…
-          </p>
-        )}
-
-        {panel === 'hidden' && generatedWords && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-4">
-            <p className="text-sm text-[var(--text)] text-center">
-              Your seed has been generated. Keep it secret.
-            </p>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 justify-items-center">
-              {generatedWords.map((_, i) => (
-                <MaskedWordBadge key={i} index={i} />
-              ))}
-            </div>
-            <button
-              onClick={handleReveal}
-              className="primary-btn self-center"
-            >
-              <Eye size={16} /> Reveal Seed
-            </button>
-          </motion.div>
-        )}
-
-        {panel === 'revealed' && generatedWords && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-4">
-            <p className="text-sm text-[var(--text)] text-center">
-              Write these words down in order. This is your only backup.
-            </p>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 justify-items-center">
-              {generatedWords.map((word, i) => (
-                <RevealedWordBadge key={i} index={i} word={word} />
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-3 justify-center">
-              <button onClick={handleCopyAll} className="secondary-btn">
-                <Copy size={14} /> Copy All
-              </button>
-              <button onClick={handleHide} className="secondary-btn">
-                Hide & Verify
-              </button>
-            </div>
-          </motion.div>
-        )}
-
-        {panel === 'copied' && generatedWords && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-4">
-            <p className="text-sm text-[var(--text)] text-center">
-              Write these words down in order. This is your only backup.
-            </p>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 justify-items-center">
-              {generatedWords.map((word, i) => (
-                <RevealedWordBadge key={i} index={i} word={word} />
-              ))}
-            </div>
-            <div className="flex flex-col gap-2 items-center">
-              <p className="text-sm font-medium text-[var(--text)]">✓ Copied to clipboard</p>
-              <button onClick={handleHide} className="secondary-btn">
-                Hide & Verify
-              </button>
-            </div>
-            <PaperBlock
-              title="Your paper — paste the 24 words here"
-              note="Simulates writing the seed on a physical sheet of paper."
-              value={paperText}
-              onChange={setPaperText}
-            />
-          </motion.div>
-        )}
-      </div>
-
-      {/* ── Verify Form ── */}
-      {panel === 'verify' && generatedWords && state.verifyIndices && (
-        <VerifyForm
-          realWords={generatedWords}
-          verifyIndices={state.verifyIndices}
-          paperText={paperText}
-          onVerified={handleVerified}
-          onError={handleVerifyError}
-          onSeeAgain={handleBackToRevealed}
-        />
-      )}
-
-      {/* ── Created ── */}
-      {panel === 'created' && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="flex flex-col items-center gap-4 text-center"
-        >
-          <h2 className="text-2xl font-bold text-[var(--text)]">
-            Your Identity is Born
-          </h2>
-          <p className="text-[var(--text-dim)] max-w-lg">
-            A root Identity with an Ed25519 keypair has been created from your
-            seed. Handles, SubHandles, and wallets are derived deterministically
-            from this key.
-          </p>
-          <button
-            onClick={handleRestart}
-            className="text-sm text-[var(--text-dim)] hover:text-[var(--text)] underline underline-offset-2 transition-colors"
-          >
-            <RefreshCw size={12} className="inline" /> Start over
-          </button>
-        </motion.div>
-      )}
-    </div>
-  );
-}
-
 // ─── Verify Form ───────────────────────────────────────────────────────────────
 
 function VerifyForm({
@@ -368,7 +132,7 @@ function VerifyForm({
   const dynamicPrompt = `Enter words #${verifyIndices[0] + 1}, #${verifyIndices[1] + 1}, and #${verifyIndices[2] + 1} from your paper.`;
 
   const paperWords = useMemo(() => parsePaperWords(paperText), [paperText]);
-  const hasPaper = paperWords.length >= 24;
+  const hasPaper = paperWords.length >= 12;
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([null, null, null]);
 
@@ -439,7 +203,7 @@ function VerifyForm({
         <div className="flex items-start gap-2 rounded-lg border border-[var(--border)] bg-[var(--bg-card)]/50 px-4 py-3">
           <XCircle size={18} className="text-[var(--text-dim)] shrink-0 mt-0.5" />
           <p className="text-sm text-[var(--text)]">
-            Paste your paper (all 24 words) above to enable verification.
+            Paste your paper (all 12 words) above to enable verification.
           </p>
         </div>
       )}
@@ -506,5 +270,228 @@ function VerifyForm({
         </button>
       </div>
     </motion.div>
+  );
+}
+
+// ─── Main component ────────────────────────────────────────────────────────────
+
+type PanelState = 'idle' | 'generating' | 'hidden' | 'revealed' | 'copied' | 'verify' | 'created';
+
+interface SeedIslandProps {
+  onIdentityReady: (identity: Identity, seedBytes: Uint8Array) => void;
+}
+
+export default function SeedIsland({ onIdentityReady }: SeedIslandProps) {
+  const [state, dispatch] = useReducer(sandboxReducer, initialState);
+  const [generatedWords, setGeneratedWords] = useState<string[] | null>(null);
+  const [paperText, setPaperText] = useState('');
+  const identityRef = useRef<Identity | null>(null);
+  const copyRef = useRef(false);
+
+  // beforeunload guard
+  useEffect(() => {
+    if (shouldWarnBeforeUnload(state.status)) {
+      const handler = (e: BeforeUnloadEvent) => {
+        e.preventDefault();
+        (e as unknown as { returnValue: string }).returnValue = '';
+      };
+      window.addEventListener('beforeunload', handler);
+      return () => window.removeEventListener('beforeunload', handler);
+    }
+  }, [state.status]);
+
+  const handleGenerate = useCallback(async () => {
+    dispatch({ type: 'startGenerating' });
+    logger.info('Generating 12-word BIP39 seed phrase…');
+    const phrase = generateSeedPhrase(128);
+    setGeneratedWords(phrase);
+    dispatch({ type: 'phraseGenerated' });
+    logger.success('Seed phrase generated', phrase.join(' '));
+  }, []);
+
+  const handleReveal = useCallback(() => {
+    dispatch({ type: 'reveal' });
+  }, []);
+
+  const handleCopyAll = useCallback(() => {
+    if (!copyRef.current && generatedWords && canCopy(state)) {
+      copyRef.current = true;
+      navigator.clipboard.writeText(generatedWords.join(' ')).catch(() => {});
+      dispatch({ type: 'copyUsed' });
+    }
+  }, [generatedWords, state]);
+
+  const handleHide = useCallback(() => {
+    dispatch({ type: 'hide' });
+  }, []);
+
+  const handleVerified = useCallback(async () => {
+    if (!generatedWords) return;
+    try {
+      logger.info('Deriving 64-byte BIP39 seed (PBKDF2-HMAC-SHA512)…');
+      const seed = await get64ByteSeedFromMnemonic(generatedWords);
+
+      logger.info('Creating root Identity from 64-byte seed…');
+      const id = await Identity.fromSeed(seed);
+      identityRef.current = id;
+
+      const pubKeyHex = Array.from(id.getPublicKey())
+        .map((b: number) => b.toString(16).padStart(2, '0'))
+        .join('');
+      logger.success('Identity created', `pub: ${pubKeyHex.slice(0, 16)}…`);
+
+      dispatch({ type: 'verifyPassed' });
+      onIdentityReady(id, seed);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      logger.error('Identity creation failed', msg);
+      dispatch({ type: 'verifyFailed' });
+    }
+  }, [generatedWords, onIdentityReady]);
+
+  const handleVerifyError = useCallback(() => {
+    dispatch({ type: 'verifyFailed' });
+  }, []);
+
+  const handleBackToRevealed = useCallback(() => {
+    dispatch({ type: 'backToRevealed' });
+  }, []);
+
+  const handleRestart = useCallback(() => {
+    if (identityRef.current) {
+      identityRef.current.dispose();
+      identityRef.current = null;
+    }
+    setGeneratedWords(null);
+    setPaperText('');
+    copyRef.current = false;
+    dispatch({ type: 'restart' });
+  }, []);
+
+  const panel: PanelState =
+    state.status === 'revealed' && state.copyUsed ? 'copied' : state.status;
+
+  return (
+    <div className="seed-island">
+      {/* ── Mentor Panel ── */}
+      <div className="mentor-panel" role="status" aria-live="polite">
+        {panel === 'idle' && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-4 items-center">
+            <p className="text-sm text-[var(--text-dim)] text-center max-w-md">
+              Your Me2eM Identity is generated from a 12-word BIP39 seed.
+              This demo runs entirely in your browser — nothing leaves your device.
+            </p>
+            <button onClick={handleGenerate} className="primary-btn">
+              <Fingerprint size={18} />
+              Generate My Identity
+            </button>
+          </motion.div>
+        )}
+
+        {panel === 'generating' && (
+          <p className="text-[var(--text-dim)] text-center">
+            <Loader2 size={16} className="inline spin" /> Generating…
+          </p>
+        )}
+
+        {panel === 'hidden' && generatedWords && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-4">
+            <p className="text-sm text-[var(--text)] text-center">
+              Your seed has been generated. Keep it secret.
+            </p>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 justify-items-center">
+              {generatedWords.map((_, i) => (
+                <MaskedWordBadge key={i} index={i} />
+              ))}
+            </div>
+            <button onClick={handleReveal} className="primary-btn self-center">
+              <Eye size={16} /> Reveal Seed
+            </button>
+          </motion.div>
+        )}
+
+        {panel === 'revealed' && generatedWords && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-4">
+            <p className="text-sm text-[var(--text)] text-center">
+              Write these words down in order. This is your only backup.
+            </p>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 justify-items-center">
+              {generatedWords.map((word, i) => (
+                <RevealedWordBadge key={i} index={i} word={word} />
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-3 justify-center">
+              <button onClick={handleCopyAll} className="secondary-btn">
+                <Copy size={14} /> Copy All
+              </button>
+              <button onClick={handleHide} className="secondary-btn">
+                Hide & Verify
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {panel === 'copied' && generatedWords && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-4">
+            <p className="text-sm text-[var(--text)] text-center">
+              Write these words down in order. This is your only backup.
+            </p>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 justify-items-center">
+              {generatedWords.map((word, i) => (
+                <RevealedWordBadge key={i} index={i} word={word} />
+              ))}
+            </div>
+            <div className="flex flex-col gap-2 items-center">
+              <p className="text-sm font-medium text-[var(--text)]">✓ Copied to clipboard</p>
+            </div>
+            <PaperBlock
+              title="Your paper — paste the 12 words here"
+              note="Simulates writing the seed on a physical sheet of paper."
+              value={paperText}
+              onChange={setPaperText}
+            />
+            <button onClick={handleHide} className="primary-btn self-center">
+              Hide & Verify
+            </button>
+          </motion.div>
+        )}
+      </div>
+
+      {/* ── Verify Form ── */}
+      {panel === 'verify' && generatedWords && state.verifyIndices && (
+        <VerifyForm
+          realWords={generatedWords}
+          verifyIndices={state.verifyIndices}
+          paperText={paperText}
+          onVerified={handleVerified}
+          onError={handleVerifyError}
+          onSeeAgain={handleBackToRevealed}
+        />
+      )}
+
+      {/* ── Created ── */}
+      {panel === 'created' && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-4 text-center"
+        >
+          <h2 className="text-2xl font-bold text-[var(--text)]">
+            Your Identity is Born
+          </h2>
+          <p className="text-[var(--text-dim)] max-w-lg">
+            A root Identity with an Ed25519 keypair has been created from your
+            seed. Handles, SubHandles, and wallets are derived deterministically
+            from this key.
+          </p>
+          <button
+            onClick={handleRestart}
+            className="text-sm text-[var(--text-dim)] hover:text-[var(--text)] underline underline-offset-2 transition-colors"
+          >
+            <RefreshCw size={12} className="inline" /> Start over
+          </button>
+        </motion.div>
+      )}
+    </div>
   );
 }
