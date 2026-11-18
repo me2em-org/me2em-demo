@@ -786,3 +786,73 @@ body {
 .log-error .log-msg {
   color: var(--error);
 }
+
+/* ===== Seed Paper ===== */
+.seed-paper {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.seed-paper-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.seed-paper-header h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.seed-paper-header p {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.paper-box {
+  margin-bottom: 16px;
+}
+
+.paper-label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.paper-textarea {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9rem;
+  color: var(--text);
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.6;
+}
+
+.paper-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.paper-textarea:disabled {
+  opacity: 0.6;
+}
+
+.verify-success {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #4ade80;
+  margin-bottom: 12px;
+}

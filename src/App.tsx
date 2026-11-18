@@ -13,15 +13,14 @@ import { useScenario } from './hooks/useScenario';
 import { runHumanScenario } from './scenarios/human';
 import { runSatelliteScenario } from './scenarios/satellite';
 import { runAgentScenario } from './scenarios/agent';
-import SeedDisplay from './components/SeedDisplay';
-import SeedVerification from './components/SeedVerification';
+import SeedPaper from './components/SeedPaper';
 import Logger from './components/Logger';
 import ScenarioHuman from './components/ScenarioHuman';
 import ScenarioSatellite from './components/ScenarioSatellite';
 import ScenarioAgent from './components/ScenarioAgent';
 import './App.css';
 
-type Step = 'seed' | 'verify' | 'scenarios';
+type Step = 'seed' | 'scenarios';
 type ScenarioId = 'human' | 'satellite' | 'agent';
 
 const scenarioMeta: Record<ScenarioId, { icon: React.ReactNode; label: string; desc: string }> = {
@@ -45,7 +44,6 @@ const scenarioMeta: Record<ScenarioId, { icon: React.ReactNode; label: string; d
 export default function App() {
   const [step, setStep] = useState<Step>('seed');
   const [activeScenario, setActiveScenario] = useState<ScenarioId | null>(null);
-  const [identityReady, setIdentityReady] = useState(false);
   const {
     seedPhrase,
     seedBytes,
@@ -59,7 +57,6 @@ export default function App() {
     if (!seedPhrase) return;
     try {
       await createIdentityFromSeed(seedPhrase);
-      setIdentityReady(true);
       setStep('scenarios');
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -90,7 +87,6 @@ export default function App() {
     satelliteScenario.clear();
     agentScenario.clear();
     setActiveScenario(null);
-    setIdentityReady(false);
     setStep('seed');
   };
 
@@ -110,18 +106,17 @@ export default function App() {
       <div className="step-indicator">
         {[
           { id: 'seed', label: 'Seed' },
-          { id: 'verify', label: 'Verify' },
           { id: 'scenarios', label: 'Scenarios' },
         ].map((s, i) => (
           <Fragment key={s.id}>
             <div
               className={`step-dot ${step === s.id ? 'active' : ''} ${
-                ['seed', 'verify', 'scenarios'].indexOf(step) > i ? 'done' : ''
+                step === 'scenarios' && i === 0 ? 'done' : ''
               }`}
             >
               {i + 1}
             </div>
-            {i < 2 && <div className="step-line" />}
+            {i < 1 && <div className="step-line" />}
           </Fragment>
         ))}
       </div>
@@ -136,7 +131,7 @@ export default function App() {
               exit={{ opacity: 0, x: 20 }}
               className="step-section"
             >
-              <h2>Step 1 — Generate Identity Seed</h2>
+              <h2>Step 1 — Your Identity Seed</h2>
               <p className="step-desc">
                 A 24-word BIP39 mnemonic generates a 64-byte seed. From this
                 seed, all Handles, SubHandles, and wallets are derived
@@ -148,32 +143,8 @@ export default function App() {
                   Generate Seed Phrase
                 </button>
               ) : (
-                <div className="seed-flow">
-                  <SeedDisplay
-                    seedPhrase={seedPhrase}
-                    onVerified={() => setStep('verify')}
-                  />
-                </div>
+                <SeedPaper seedPhrase={seedPhrase} onVerified={handleSeedConfirmed} />
               )}
-            </motion.section>
-          )}
-
-          {step === 'verify' && (
-            <motion.section
-              key="verify"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              className="step-section"
-            >
-              <h2>Step 2 — Verify Seed</h2>
-              <p className="step-desc">
-                Enter 3 words from your seed phrase to confirm you have it.
-              </p>
-              <SeedVerification
-                seedPhrase={seedPhrase!}
-                onSuccess={handleSeedConfirmed}
-              />
             </motion.section>
           )}
 
@@ -185,7 +156,7 @@ export default function App() {
               exit={{ opacity: 0, x: 20 }}
               className="step-section"
             >
-              <h2>Step 3 — Protocol Scenarios</h2>
+              <h2>Step 2 — Protocol Scenarios</h2>
               <p className="step-desc">
                 Your Identity is ready. Pick a scenario to run a live protocol
                 flow using <code>@me2em/core</code>,{' '}
