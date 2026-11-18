@@ -1,10 +1,5 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { Buffer as BufferPolyfill } from 'buffer'
-if (typeof (globalThis as any).Buffer === 'undefined') {
-  ;(globalThis as any).Buffer = BufferPolyfill
-}
-
 import App from './App.tsx'
 import './App.css'
 

@@ -10,14 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@me2em/core": "^0.7.0-alpha.1",
-    "@noble/hashes": "^2.4.0",
-    "@scure/bip39": "^2.4.0",
-    "buffer": "^6.0.3",
+    "@me2em/core": "^1.0.0-rc.8",
+    "@me2em/crypto": "^1.1.0-rc.2",
+    "@me2em/react": "^1.0.0-rc.4",
+    "@me2em/solana": "^1.1.0-rc.1",
+    "@me2em/x402": "^1.0.0-rc.1",
     "framer-motion": "^13.1.1",
-    "i": "^0.3.7",
     "lucide-react": "^1.39.0",
-    "npm": "^12.2.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
