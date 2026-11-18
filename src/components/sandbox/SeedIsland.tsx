@@ -427,9 +427,14 @@ export default function SeedIsland({ onIdentityReady }: SeedIslandProps) {
               value={paperText}
               onChange={setPaperText}
             />
-            <button onClick={handleHide} className="primary-btn self-center">
+            <button onClick={handleHide} disabled={!paperText.trim()} className="primary-btn self-center">
               Verify Seed on Paper
             </button>
+            {!paperText.trim() && (
+              <p className="verify-disabled-hint text-center">
+                Paste the 12 words into your paper above to enable verification.
+              </p>
+            )}
           </motion.div>
         )}
       </div>

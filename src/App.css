@@ -878,3 +878,226 @@ body {
   border-radius: 6px;
   border: 1px solid var(--border);
 }
+
+/* ── Disabled gate: Verify Seed on Paper ── */
+.primary-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.verify-disabled-hint {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+/* ── Human scenario: root identity card ── */
+.identity-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.identity-avatar {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent-light), #a78bfa);
+}
+
+.identity-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.identity-subtitle {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+}
+
+.derive-note {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  text-align: center;
+  margin: 14px 0;
+}
+
+/* ── Full key rows ── */
+.key-row {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.key-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+
+.key-value-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.key-value {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  word-break: break-all;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: var(--text);
+}
+
+.key-value.private {
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.45);
+  background: rgba(248, 113, 113, 0.07);
+}
+
+.copy-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.copy-btn:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.copy-btn.copied {
+  color: var(--success);
+  border-color: var(--success);
+}
+
+.privkey-warning {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  background: rgba(248, 113, 113, 0.08);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.8rem;
+  color: #fca5a5;
+}
+
+/* ── Handle profile ── */
+.handle-profile {
+  width: 100%;
+}
+
+.handle-profile-id {
+  flex: 1;
+  min-width: 0;
+}
+
+.handle-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid var(--border);
+}
+
+.handle-profile-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.handle-profile-nick {
+  font-size: 0.8rem;
+  color: var(--accent-light);
+  font-family: var(--mono);
+}
+
+.handle-profile-email {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.handle-name-chip {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 2px 8px;
+  flex-shrink: 0;
+}
+
+.handle-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Solana wallet block ── */
+.wallet-block {
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(99, 102, 241, 0.04);
+}
+
+.wallet-label {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.75rem;
+}
+
+.wallet-path {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--accent-light);
+  background: rgba(99, 102, 241, 0.1);
+  border-radius: 10px;
+  padding: 2px 8px;
+  width: fit-content;
+}

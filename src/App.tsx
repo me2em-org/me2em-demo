@@ -52,7 +52,7 @@ export default function App() {
     [],
   );
 
-  const humanScenario = useScenario(() => runHumanScenario(identity!));
+  const humanScenario = useScenario(() => runHumanScenario(identity!, seedBytes!));
   const satelliteScenario = useScenario(() =>
     runSatelliteScenario(identity!, seedBytes!),
   );

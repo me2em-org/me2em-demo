@@ -1,27 +1,162 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Briefcase, Home, Dumbbell, Key, Radio, CheckCircle2 } from 'lucide-react';
-import type { HumanResult } from '../scenarios/human';
+import {
+  Key,
+  Radio,
+  CheckCircle2,
+  Copy,
+  Check,
+  AlertTriangle,
+  Wallet,
+  Mail,
+} from 'lucide-react';
+import type {
+  HumanResult,
+  HumanRootIdentity,
+  HumanHandleInfo,
+} from '../scenarios/human';
 
 interface Props {
   result: HumanResult | null;
   loading: boolean;
 }
 
-const contextIcons: Record<string, React.ReactNode> = {
-  work: <Briefcase size={16} />,
-  family: <Home size={16} />,
-  gym: <Dumbbell size={16} />,
-};
+function CopyBtn({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
 
-function shorten(hex: string, chars = 12): string {
-  if (hex.length <= chars * 2) return hex;
-  return `${hex.slice(0, chars)}…${hex.slice(-chars)}`;
+  const handleCopy = () => {
+    navigator.clipboard.writeText(value).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  return (
+    <button
+      type="button"
+      className={`copy-btn ${copied ? 'copied' : ''}`}
+      onClick={handleCopy}
+      aria-label="Copy value"
+    >
+      {copied ? <Check size={12} /> : <Copy size={12} />}
+    </button>
+  );
+}
+
+function KeyRow({
+  label,
+  value,
+  red = false,
+}: {
+  label: string;
+  value: string;
+  red?: boolean;
+}) {
+  return (
+    <div className="key-row">
+      <span className="key-label">{label}</span>
+      <div className="key-value-wrap">
+        <code className={`key-value ${red ? 'private' : ''}`}>{value}</code>
+        <CopyBtn value={value} />
+      </div>
+    </div>
+  );
+}
+
+function RootIdentityCard({ root }: { root: HumanRootIdentity }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="identity-card"
+    >
+      <div className="identity-avatar">I</div>
+      <div className="identity-title">Root Identity</div>
+      <div className="identity-subtitle">
+        One seed → one master keypair (Ed25519)
+      </div>
+      <KeyRow label="Public Key" value={root.pubKeyHex} />
+      <KeyRow label="Private Key — master secret" value={root.privKeyHex} red />
+      <div className="privkey-warning">
+        <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+        <span>
+          In real life a private key is <b>never published or shown</b> — it is
+          the master secret, on the same level of sensitivity as your 12-word
+          seed. Displayed here only so you can see what must never leave the
+          device.
+        </span>
+      </div>
+    </motion.div>
+  );
+}
+
+function HandleCard({ ctx }: { ctx: HumanHandleInfo }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="context-card"
+    >
+      <div className="context-card-header handle-profile">
+        <div className="handle-avatar">{ctx.avatar}</div>
+        <div className="handle-profile-id">
+          <div className="handle-profile-name">{ctx.displayName}</div>
+          <div className="handle-profile-nick">{ctx.nickname}</div>
+        </div>
+        <span className="handle-name-chip">{ctx.name}</span>
+        <button
+          className="expand-btn"
+          onClick={() => setExpanded(!expanded)}
+          aria-label="Toggle derived secrets"
+        >
+          {expanded ? '−' : '+'}
+        </button>
+      </div>
+
+      <div className="context-card-body handle-card-body">
+        <div className="handle-profile-email">
+          <Mail size={12} />
+          {ctx.email}
+        </div>
+
+        <KeyRow label="Handle ID" value={ctx.handleId} />
+        <KeyRow label="Public Key" value={ctx.pubKeyHex} />
+        <KeyRow label="Private Key — never published" value={ctx.privKeyHex} red />
+
+        <div className="wallet-block">
+          <span className="key-label wallet-label">
+            <Wallet size={11} /> Solana Wallet — derived from the same seed
+          </span>
+          <KeyRow label="Address" value={ctx.wallet.address} />
+          <span className="wallet-path">{ctx.wallet.derivationPath}</span>
+          {expanded && (
+            <KeyRow
+              label="Wallet Private Key (base58)"
+              value={ctx.wallet.privateKeyBase58}
+              red
+            />
+          )}
+        </div>
+
+        {expanded && (
+          <>
+            <KeyRow
+              label={`Password · context "${ctx.name}"`}
+              value={ctx.password}
+            />
+            <KeyRow
+              label={`Channel Key · context "${ctx.name}"`}
+              value={ctx.channelKeyHex}
+            />
+          </>
+        )}
+      </div>
+    </motion.div>
+  );
 }
 
 export default function ScenarioHuman({ result, loading }: Props) {
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-
   if (loading) {
     return (
       <div className="scenario-loading">
@@ -31,7 +166,7 @@ export default function ScenarioHuman({ result, loading }: Props) {
         >
           <Key size={24} />
         </motion.div>
-        <p>Deriving context Handles…</p>
+        <p>Deriving root Identity and context Handles…</p>
       </div>
     );
   }
@@ -48,65 +183,32 @@ export default function ScenarioHuman({ result, loading }: Props) {
     <div className="scenario-result">
       <div className="scenario-header">
         <CheckCircle2 size={20} className="success-icon" />
-        <h3>Multi-Context Identity</h3>
-        <p className="scenario-desc">
-          One root Identity → three isolated Handles. Each context has its own
-          deterministic password and channel key — no shared credentials.
-        </p>
+        <div>
+          <h3>Multi-Context Identity</h3>
+          <p className="scenario-desc">
+            One root Identity → three isolated Handles. Each context has its
+            own profile, keypair, and Solana wallet — no shared credentials.
+          </p>
+        </div>
       </div>
+
+      <RootIdentityCard root={result.root} />
+
+      <p className="derive-note">
+        ↓ Each Handle is derived deterministically from the root keypair —
+        deriving one reveals nothing about the others.
+      </p>
 
       <div className="context-cards">
         {result.contexts.map((ctx) => (
-          <motion.div
-            key={ctx.name}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="context-card"
-          >
-            <div className="context-card-header">
-              {contextIcons[ctx.name]}
-              <span className="context-name">{ctx.name}</span>
-              <button
-                className="expand-btn"
-                onClick={() =>
-                  setExpanded((p) => ({ ...p, [ctx.name]: !p[ctx.name] }))
-                }
-              >
-                {expanded[ctx.name] ? '−' : '+'}
-              </button>
-            </div>
-
-            <div className="context-card-body">
-              <div className="kv-row">
-                <span className="kv-label">Handle ID</span>
-                <code>{shorten(ctx.handleId, 16)}</code>
-              </div>
-              <div className="kv-row">
-                <span className="kv-label">Public Key</span>
-                <code>{shorten(ctx.pubKeyHex, 16)}</code>
-              </div>
-
-              {expanded[ctx.name] && (
-                <>
-                  <div className="kv-row">
-                    <span className="kv-label">Password</span>
-                    <code className="mono">{ctx.password}</code>
-                  </div>
-                  <div className="kv-row">
-                    <span className="kv-label">Channel Key</span>
-                    <code>{shorten(ctx.channelKeyHex, 16)}</code>
-                  </div>
-                </>
-              )}
-            </div>
-          </motion.div>
+          <HandleCard key={ctx.name} ctx={ctx} />
         ))}
       </div>
 
       <div className="scenario-footer">
         <Radio size={14} />
         <span>
-          Root public key: <code>{shorten(result.rootPubKeyHex, 16)}</code>
+          Root public key: <code>{result.root.pubKeyHex.slice(0, 24)}…</code>
         </span>
       </div>
     </div>
