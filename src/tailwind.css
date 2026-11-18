@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+/*
+ * Vars used by sandbox components (SeedIsland / VerifyForm).
+ * Aligned with the dark palette defined in App.css (--surface, --text-dim).
+ * Imported BEFORE App.css so App.css keeps precedence for shared names.
+ */
+:root {
+  --bg-card: #111827;      /* = --surface in App.css */
+  --bg-hover: #1a2235;     /* = --surface-2 in App.css */
+  --text-dim: #94a3b8;     /* = --text-dim in App.css */
+  --text-subtle: #64748b;
+}
