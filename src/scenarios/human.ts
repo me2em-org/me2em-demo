@@ -14,6 +14,12 @@ export interface HumanRootIdentity {
   privKeyHex: string;
 }
 
+export interface HumanPasswords {
+  email: string;
+  google: string;
+  github: string;
+}
+
 export interface HumanHandleInfo {
   name: string;
   displayName: string;
@@ -23,7 +29,7 @@ export interface HumanHandleInfo {
   handleId: string;
   pubKeyHex: string;
   privKeyHex: string;
-  password: string;
+  passwords: HumanPasswords;
   channelKeyHex: string;
   wallet: HumanWalletInfo;
 }
@@ -131,7 +137,13 @@ export async function runHumanScenario(
       handleId: handle.getId(),
       pubKeyHex: toHex(handle.getPublicKey()),
       privKeyHex: toHex(handlePrivKey),
-      password: handle.derivePassword(name, { byteLength: 16 }),
+      // Same services, different contexts — each Handle produces its own
+      // deterministic passwords even for the same service name.
+      passwords: {
+        email: handle.derivePassword(profile.email, { byteLength: 16 }),
+        google: handle.derivePassword('Google', { byteLength: 16 }),
+        github: handle.derivePassword('Github', { byteLength: 16 }),
+      },
       channelKeyHex: toHex(handle.deriveChannelKey(name)),
       wallet: {
         address: wallet.address,

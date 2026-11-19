@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { logger } from '../utils/logger';
 
 export type ScenarioId = 'human' | 'satellite' | 'agent';
@@ -7,7 +7,9 @@ export function useScenario<T>(fn: () => Promise<T>) {
   const [result, setResult] = useState<T | null>(null);
   const [loading, setLoading] = useState(false);
   const fnRef = useRef(fn);
-  fnRef.current = fn;
+  useEffect(() => {
+    fnRef.current = fn;
+  });
 
   const run = useCallback(async () => {
     setResult(null);

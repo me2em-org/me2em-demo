@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Identity, crypto as coreCrypto, generateSeedPhrase, get64ByteSeedFromMnemonic } from '@me2em/core';
 import { logger } from '../../utils/logger';
+import { parsePaperWords } from '../../utils/paperWords';
 import {
   sandboxReducer,
   initialState,
@@ -20,26 +21,6 @@ import {
 
 function toHex(bytes: Uint8Array): string {
   return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-// ─── Parse paper text into words ──────────────────────────────────────────────
-export function parsePaperWords(raw: string): string[] {
-  const tokens = raw
-    .replace(/[\r\n\t]+/g, ' ')
-    .split(/\s+/)
-    .filter(Boolean);
-
-  const words: string[] = [];
-  for (const token of tokens) {
-    const stripped = token.replace(/^\d+\.\s*/, '');
-    if (!stripped) continue;
-    if (/^\d+$/.test(stripped)) continue;
-    const clean = stripped.replace(/[.,;:!?"'(){}[\]]+$/g, '');
-    if (!clean) continue;
-    words.push(clean);
-    if (words.length >= 24) break;
-  }
-  return words;
 }
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
@@ -71,16 +52,18 @@ function PaperBlock({
   note,
   value,
   onChange,
+  onClear,
 }: {
   title: string;
   note?: string;
   value: string;
   onChange: (v: string) => void;
+  onClear: () => void;
 }) {
   return (
     <div className="flex flex-col gap-2 mt-2 p-4 rounded-lg border border-[var(--border)] bg-[var(--bg-card)]/50">
       <p className="text-sm text-[var(--text-dim)] text-center">{title}</p>
-      {note && <p className="text-sm text-[var(--text-dim)]">{note}</p>}
+      {note && <p className="text-sm text-[var(--text-dim)] text-center">{note}</p>}
       <textarea
         rows={4}
         aria-label={title}
@@ -88,6 +71,16 @@ function PaperBlock({
         onChange={(e) => onChange(e.target.value)}
         className="w-full rounded-lg border-2 border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm font-mono focus:border-[var(--accent)] transition-colors outline-none resize-y"
       />
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={onClear}
+          disabled={!value.trim()}
+          className="paper-clear-btn"
+        >
+          Clear
+        </button>
+      </div>
     </div>
   );
 }
@@ -194,6 +187,7 @@ function VerifyForm({
             note="Simulates writing the seed on a physical sheet of paper."
             value={paperText}
             onChange={onPaperChange}
+            onClear={() => onPaperChange('')}
           />
           <div className="flex items-start gap-2 rounded-lg border border-[var(--border)] bg-[var(--bg-card)]/50 px-4 py-3">
             <XCircle size={18} className="text-[var(--text-dim)] shrink-0 mt-0.5" />
@@ -282,8 +276,13 @@ export default function SeedIsland({ onIdentityReady, children }: SeedIslandProp
   const [state, dispatch] = useReducer(sandboxReducer, initialState);
   const [generatedWords, setGeneratedWords] = useState<string[] | null>(null);
   const [paperText, setPaperText] = useState('');
+  const [paperError, setPaperError] = useState(false);
+  const [copiedHint, setCopiedHint] = useState(false);
+  const [identityInfo, setIdentityInfo] = useState<{
+    pubHex: string;
+    privHex: string | null;
+  } | null>(null);
   const identityRef = useRef<Identity | null>(null);
-  const rootPrivKeyRef = useRef<Uint8Array | null>(null);
   const copyRef = useRef(false);
 
   // beforeunload guard
@@ -320,9 +319,28 @@ export default function SeedIsland({ onIdentityReady, children }: SeedIslandProp
     }
   }, [generatedWords, state]);
 
+  const handleCopySeed = useCallback(() => {
+    if (!generatedWords) return;
+    navigator.clipboard.writeText(generatedWords.join(' ')).catch(() => {});
+    setCopiedHint(true);
+    window.setTimeout(() => setCopiedHint(false), 1500);
+  }, [generatedWords]);
+
+  // Strict gate: the paper must carry the exact seed (order included)
+  // before verification may start.
   const handleHide = useCallback(() => {
+    if (!generatedWords) return;
+    const pasted = parsePaperWords(paperText).map((w) => w.toLowerCase());
+    const exact =
+      pasted.length === generatedWords.length &&
+      pasted.every((w, i) => w === generatedWords[i].toLowerCase());
+    if (!exact) {
+      setPaperError(true);
+      return;
+    }
+    setPaperError(false);
     dispatch({ type: 'hide' });
-  }, []);
+  }, [generatedWords, paperText]);
 
   const handleVerified = useCallback(async () => {
     if (!generatedWords) return;
@@ -334,10 +352,11 @@ export default function SeedIsland({ onIdentityReady, children }: SeedIslandProp
       logger.info('Creating root Identity from 64-byte seed…');
       const id = await Identity.fromSeed(seed);
       identityRef.current = id;
+      let privHex: string | null = null;
       try {
-        rootPrivKeyRef.current = coreCrypto.deriveRootKey(seed);
+        privHex = toHex(coreCrypto.deriveRootKey(seed));
       } catch {
-        rootPrivKeyRef.current = null;
+        privHex = null;
       }
 
       const pubKeyHex = Array.from(id.getPublicKey())
@@ -345,6 +364,7 @@ export default function SeedIsland({ onIdentityReady, children }: SeedIslandProp
         .join('');
       logger.success('Identity created', `pub: ${pubKeyHex.slice(0, 16)}…`);
 
+      setIdentityInfo({ pubHex: pubKeyHex, privHex });
       dispatch({ type: 'verifyPassed' });
       onIdentityReady(id, seed);
     } catch (e: unknown) {
@@ -369,6 +389,9 @@ export default function SeedIsland({ onIdentityReady, children }: SeedIslandProp
     }
     setGeneratedWords(null);
     setPaperText('');
+    setPaperError(false);
+    setCopiedHint(false);
+    setIdentityInfo(null);
     copyRef.current = false;
     dispatch({ type: 'restart' });
   }, []);
@@ -404,6 +427,18 @@ export default function SeedIsland({ onIdentityReady, children }: SeedIslandProp
             <p className="text-sm text-[var(--text)] text-center">
               Your seed has been generated. Keep it secret.
             </p>
+            <div className="seed-info">
+              <p>
+                The phrase is 128 bits of entropy packed into memorable words.
+                The entire key hierarchy derives deterministically from it:
+                Identity → Handle → SubHandle — the same seed yields the same
+                keys on every device.
+              </p>
+              <p>
+                Brute-forcing it is impossible: even a trillion guesses per
+                second means billions of years.
+              </p>
+            </div>
             <button onClick={handleReveal} className="primary-btn">
               <Eye size={18} /> Reveal Seed
             </button>
@@ -434,12 +469,31 @@ export default function SeedIsland({ onIdentityReady, children }: SeedIslandProp
                 <span key={i} className="seed-word">{word}</span>
               ))}
             </div>
+            <button onClick={handleCopySeed} className="secondary-btn self-center">
+              <Copy size={16} /> {copiedHint ? 'Copied ✓' : 'Copy Seed'}
+            </button>
             <PaperBlock
               title="Your paper — paste the 12 words here"
               note="Simulates writing the seed on a physical sheet of paper."
               value={paperText}
-              onChange={setPaperText}
+              onChange={(v) => {
+                setPaperText(v);
+                setPaperError(false);
+              }}
+              onClear={() => {
+                setPaperText('');
+                setPaperError(false);
+              }}
             />
+            {paperError && (
+              <div className="flex items-start gap-2 rounded-lg border border-red-400/40 bg-red-400/10 px-4 py-3">
+                <XCircle size={18} className="text-red-400 shrink-0 mt-0.5" />
+                <p className="text-sm text-red-400">
+                  The pasted text doesn't match your seed. Copy the 12 words
+                  above and paste them exactly, in order.
+                </p>
+              </div>
+            )}
             <button onClick={handleHide} disabled={!paperText.trim()} className="primary-btn self-center">
               Verify Seed on Paper
             </button>
@@ -481,7 +535,7 @@ export default function SeedIsland({ onIdentityReady, children }: SeedIslandProp
             from this key.
           </p>
 
-          {identityRef.current && (
+          {identityInfo && (
             <div className="identity-card w-full max-w-md">
               <div className="identity-avatar">I</div>
               <div className="identity-info">
@@ -493,14 +547,14 @@ export default function SeedIsland({ onIdentityReady, children }: SeedIslandProp
                   <div className="key-row">
                     <span className="key-label">Public Key</span>
                     <code className="key-value">
-                      {toHex(identityRef.current.getPublicKey())}
+                      {identityInfo.pubHex}
                     </code>
                   </div>
-                  {rootPrivKeyRef.current && (
+                  {identityInfo.privHex && (
                     <div className="key-row">
                       <span className="key-label">Private Key — master secret</span>
                       <code className="key-value key-value--red">
-                        {toHex(rootPrivKeyRef.current)}
+                        {identityInfo.privHex}
                       </code>
                     </div>
                   )}

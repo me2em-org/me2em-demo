@@ -80,7 +80,7 @@ function HandleCard({ ctx }: { ctx: HumanHandleInfo }) {
         <button
           className="expand-btn"
           onClick={() => setExpanded(!expanded)}
-          aria-label="Toggle derived secrets"
+          aria-label="Toggle private keys"
         >
           {expanded ? '−' : '+'}
         </button>
@@ -92,10 +92,16 @@ function HandleCard({ ctx }: { ctx: HumanHandleInfo }) {
           {ctx.email}
         </div>
 
-        <KeyRow label="Handle ID" value={ctx.handleId} />
-        <KeyRow label="Public Key" value={ctx.pubKeyHex} />
-        <KeyRow label="Private Key — never published" value={ctx.privKeyHex} red />
+        {/* Группа 1 — ключи Handle. Приватный ключ скрыт за «+». */}
+        <div className="wallet-block">
+          <KeyRow label="Handle ID" value={ctx.handleId} />
+          <KeyRow label="Public Key" value={ctx.pubKeyHex} />
+          {expanded && (
+            <KeyRow label="Private Key — never published" value={ctx.privKeyHex} red />
+          )}
+        </div>
 
+        {/* Группа 2 — детерминированный кошелёк из того же сида. */}
         <div className="wallet-block">
           <span className="key-label wallet-label">
             <Wallet size={11} /> Solana Wallet — derived from the same seed
@@ -111,18 +117,13 @@ function HandleCard({ ctx }: { ctx: HumanHandleInfo }) {
           )}
         </div>
 
-        {expanded && (
-          <>
-            <KeyRow
-              label={`Password · context "${ctx.name}"`}
-              value={ctx.password}
-            />
-            <KeyRow
-              label={`Channel Key · context "${ctx.name}"`}
-              value={ctx.channelKeyHex}
-            />
-          </>
-        )}
+        {/* Группа 3 — сервисные пароли контекста и канал E2EE. */}
+        <div className="wallet-block">
+          <KeyRow label={`Password for "${ctx.email}"`} value={ctx.passwords.email} />
+          <KeyRow label='Password for "Google"' value={ctx.passwords.google} />
+          <KeyRow label='Password for "Github"' value={ctx.passwords.github} />
+          <KeyRow label={`Channel Key for E2EE "${ctx.name}"`} value={ctx.channelKeyHex} />
+        </div>
       </div>
     </motion.div>
   );
