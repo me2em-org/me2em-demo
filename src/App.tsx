@@ -6,11 +6,12 @@ import {
   Satellite,
   Bot,
   CreditCard,
+  PlugZap,
+  KeyRound,
   ChevronRight,
 } from 'lucide-react';
 import { Identity } from '@me2em/core';
 import { useScenario } from './hooks/useScenario';
-import { runHumanScenario } from './scenarios/human';
 import { runAgentScenario } from './scenarios/agent';
 import SeedIsland from './components/sandbox/SeedIsland';
 import Logger from './components/Logger';
@@ -18,9 +19,11 @@ import ScenarioHuman from './components/ScenarioHuman';
 import ScenarioSatellite from './components/ScenarioSatellite';
 import ScenarioAgent from './components/ScenarioAgent';
 import ScenarioCommerce from './components/ScenarioCommerce';
+import ScenarioSso from './components/ScenarioSso';
+import ScenarioEv from './components/ScenarioEv';
 import './App.css';
 
-type ScenarioId = 'human' | 'satellite' | 'agent' | 'commerce';
+type ScenarioId = 'human' | 'satellite' | 'agent' | 'sso' | 'ev' | 'commerce';
 
 const scenarioMeta: Record<ScenarioId, { icon: React.ReactNode; label: string; desc: string }> = {
   human: {
@@ -37,6 +40,16 @@ const scenarioMeta: Record<ScenarioId, { icon: React.ReactNode; label: string; d
     icon: <Bot size={18} />,
     label: 'AI Agent',
     desc: 'Mandate & revocation',
+  },
+  sso: {
+    icon: <KeyRound size={18} />,
+    label: 'Multi-App SSO',
+    desc: 'One seed, every app',
+  },
+  ev: {
+    icon: <PlugZap size={18} />,
+    label: 'EV Stations',
+    desc: 'Offline IoT hierarchy',
   },
   commerce: {
     icon: <CreditCard size={18} />,
@@ -58,19 +71,17 @@ export default function App() {
     [],
   );
 
-  const humanScenario = useScenario(() => runHumanScenario(identity!, seedBytes!));
   const agentScenario = useScenario(() => runAgentScenario(identity!));
 
-  // Satellite scenario is interactive and manages its own stages inside
-  // ScenarioSatellite; the other two are one-shot runs.
+  // Satellite, Human, SSO, EV and Commerce are interactive and manage their
+  // own stages inside their components; the agent scenario is a one-shot run.
   const scenarioMap = {
-    human: humanScenario,
     agent: agentScenario,
   };
 
   const handleRunScenario = (id: ScenarioId) => {
     setActiveScenario(id);
-    if (id === 'satellite' || id === 'commerce') return;
+    if (id !== 'agent') return;
     scenarioMap[id].run();
   };
 
@@ -100,7 +111,7 @@ export default function App() {
                       key={id}
                       className={`scenario-tab ${activeScenario === id ? 'active' : ''}`}
                       onClick={() => handleRunScenario(id)}
-                      disabled={id !== 'satellite' && id !== 'commerce' && scenarioMap[id].loading}
+                      disabled={id === 'agent' && agentScenario.loading}
                     >
                       {scenarioMeta[id].icon}
                       <span>{scenarioMeta[id].label}</span>
@@ -125,8 +136,8 @@ export default function App() {
                 <div className="scenario-content">
                   {activeScenario === 'human' && (
                     <ScenarioHuman
-                      result={humanScenario.result}
-                      loading={humanScenario.loading}
+                      identity={identity}
+                      seedBytes={seedBytes}
                     />
                   )}
                   {activeScenario === 'satellite' && (
@@ -134,6 +145,12 @@ export default function App() {
                       identity={identity}
                       seedBytes={seedBytes}
                     />
+                  )}
+                  {activeScenario === 'sso' && (
+                    <ScenarioSso identity={identity} />
+                  )}
+                  {activeScenario === 'ev' && (
+                    <ScenarioEv identity={identity} />
                   )}
                   {activeScenario === 'commerce' && (
                     <ScenarioCommerce

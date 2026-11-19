@@ -1,6 +1,6 @@
 export type LogLevel = 'info' | 'success' | 'warn' | 'error';
 
-export type ScenarioTag = 'seed' | 'human' | 'satellite' | 'agent' | 'commerce';
+export type ScenarioTag = 'seed' | 'human' | 'satellite' | 'agent' | 'commerce' | 'sso' | 'ev';
 
 export type LogEntry = {
   id: string;

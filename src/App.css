@@ -1489,3 +1489,9 @@ body {
   font-size: 0.78rem;
   margin-top: 4px;
 }
+
+/* ── SSO cookie card ── */
+.cookie-card {
+  border-color: rgba(96, 165, 250, 0.45);
+  margin-top: 12px;
+}

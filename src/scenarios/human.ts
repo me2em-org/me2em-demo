@@ -34,14 +34,9 @@ export interface HumanHandleInfo {
   wallet: HumanWalletInfo;
 }
 
-export interface HumanResult {
-  root: HumanRootIdentity;
-  contexts: HumanHandleInfo[];
-}
-
 // Demo profiles: the same human behind three isolated contexts.
 // `.example` domains (RFC 2606) mark these addresses as demo-only.
-const DEMO_PROFILES: Record<
+export const DEMO_PROFILES: Record<
   string,
   { displayName: string; nickname: string; email: string; avatar: string }
 > = {
@@ -65,6 +60,13 @@ const DEMO_PROFILES: Record<
   },
 };
 
+export const CONTEXT_ORDER = ['work', 'family', 'gym'] as const;
+export type ContextName = (typeof CONTEXT_ORDER)[number];
+
+// Wallet derivation index per context — deterministic regardless of the
+// order in which the user creates the handles in the demo.
+const CONTEXT_WALLET_INDEX: Record<string, number> = { work: 0, family: 1, gym: 2 };
+
 function toHex(bytes: Uint8Array): string {
   return Array.from(bytes)
     .map((b: number) => b.toString(16).padStart(2, '0'))
@@ -79,56 +81,96 @@ function randomKeyBytes(): Uint8Array {
   return buf;
 }
 
-export async function runHumanScenario(
-  identity: Identity,
-  seedBytes: Uint8Array,
-): Promise<HumanResult> {
-  logger.setScenario('human');
-  const contexts = ['work', 'family', 'gym'];
+/**
+ * Staged engine: the user creates handles one at a time — work first,
+ * then family, then gym — matching the progressive style of the other
+ * scenarios. Every derivation is deterministic from the same seed.
+ */
+export class HumanEngine {
+  private identity: Identity | null = null;
+  private tree: SolanaWalletTree | null = null;
+  private root: HumanRootIdentity | null = null;
+  private rootPriv: Uint8Array | null = null;
 
-  logger.info(
-    'Deriving master private key (HKDF-SHA256, info=me2em/identity/v1/root)…',
-  );
-  // Official audit path from @me2em/core: deriveRootKey reproduces exactly
-  // the key Identity.fromSeed holds (TSDoc: "reproduce or audit").
-  let rootPrivKey: Uint8Array;
-  try {
-    rootPrivKey = coreCrypto.deriveRootKey(seedBytes);
-  } catch {
-    logger.warn('deriveRootKey unavailable — showing a random placeholder key');
-    rootPrivKey = randomKeyBytes();
+  dispose(): void {
+    try {
+      this.tree?.dispose();
+    } catch {
+      /* already disposed */
+    }
+    this.tree = null;
+    this.identity = null;
+    this.root = null;
+    this.rootPriv?.fill(0);
+    this.rootPriv = null;
   }
 
-  const root: HumanRootIdentity = {
-    pubKeyHex: toHex(identity.getPublicKey()),
-    privKeyHex: toHex(rootPrivKey),
-  };
+  getRoot(): HumanRootIdentity | null {
+    return this.root;
+  }
 
-  const tree = SolanaWalletTree.fromSeed(seedBytes);
-  const results: HumanHandleInfo[] = [];
+  async init(identity: Identity, seedBytes: Uint8Array): Promise<HumanRootIdentity> {
+    logger.setScenario('human');
+    this.dispose();
+    this.identity = identity;
 
-  for (let i = 0; i < contexts.length; i++) {
-    const name = contexts[i];
+    logger.info(
+      'Deriving master private key (HKDF-SHA256, info=me2em/identity/v1/root)…',
+    );
+    // Official audit path from @me2em/core: deriveRootKey reproduces exactly
+    // the key Identity.fromSeed holds (TSDoc: "reproduce or audit").
+    let rootPrivKey: Uint8Array;
+    try {
+      rootPrivKey = coreCrypto.deriveRootKey(seedBytes);
+    } catch {
+      logger.warn('deriveRootKey unavailable — showing a random placeholder key');
+      rootPrivKey = randomKeyBytes();
+    }
+
+    this.root = {
+      pubKeyHex: toHex(identity.getPublicKey()),
+      privKeyHex: toHex(rootPrivKey),
+    };
+    this.rootPriv = rootPrivKey;
+    this.tree = SolanaWalletTree.fromSeed(seedBytes);
+    logger.success('Root Identity ready — handles derive from it one by one');
+    return this.root;
+  }
+
+  /** Derive ONE context handle (its profile, keys, passwords, wallet). */
+  async deriveContext(name: ContextName): Promise<HumanHandleInfo> {
+    if (!this.identity || !this.tree || !this.root) {
+      throw new Error('run init first');
+    }
+    logger.setScenario('human');
     const profile = DEMO_PROFILES[name];
 
     logger.info(`Deriving Handle "${name}" from root Identity…`);
-    const handle: Handle = await identity.deriveHandle(name, {
+    const handle: Handle = await this.identity.deriveHandle(name, {
       displayName: profile.displayName,
     });
 
     let handlePrivKey: Uint8Array;
     try {
-      handlePrivKey = coreCrypto.deriveHandleKey(rootPrivKey, name);
+      handlePrivKey = coreCrypto.deriveHandleKey(
+        this.rootPriv as Uint8Array,
+        name,
+      );
     } catch {
       logger.warn(`deriveHandleKey("${name}") unavailable — random placeholder`);
       handlePrivKey = randomKeyBytes();
     }
 
-    const wallet = await tree.deriveWallet(i);
+    const wallet = await this.tree.deriveWallet(CONTEXT_WALLET_INDEX[name]);
     const privateKeyBase58 = base58.encode(wallet.privateKey);
     wallet.privateKey.fill(0); // wipe per API contract (fresh buffer)
 
-    results.push({
+    logger.success(
+      `Handle "${name}" derived`,
+      `wallet ${wallet.derivationPath} → ${wallet.address.slice(0, 8)}…`,
+    );
+
+    return {
       name,
       displayName: profile.displayName,
       nickname: profile.nickname,
@@ -150,15 +192,6 @@ export async function runHumanScenario(
         derivationPath: wallet.derivationPath,
         privateKeyBase58,
       },
-    });
-
-    logger.success(
-      `Handle "${name}" derived`,
-      `wallet ${wallet.derivationPath} → ${wallet.address.slice(0, 8)}…`,
-    );
+    };
   }
-
-  tree.dispose();
-
-  return { root, contexts: results };
 }

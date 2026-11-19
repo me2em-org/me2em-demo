@@ -42,8 +42,10 @@ export default function ScenarioAgent({ result, loading }: Props) {
         <h3>AI Agent Mandate & Revocation</h3>
         <p className="scenario-desc">
           Owner issues a time-boxed mandate (attestation) to an AI agent.
-          The agent signs its own session. The owner can revoke the session
-          at any time — verification fails immediately.
+          The agent signs its own session. Revoking a session stops one
+          request; revoking the attestation is the one-call kill switch —
+          the agent is disabled across every service, future sessions
+          included.
         </p>
       </div>
 
@@ -95,6 +97,46 @@ export default function ScenarioAgent({ result, loading }: Props) {
               {!result.sessionVerifiedAfter
                 ? '✓ REVOKED — verification correctly fails'
                 : '✗ Expected revocation to fail, but it passed'}
+            </p>
+          </div>
+        </div>
+
+        <div className="timeline-step">
+          <div className={`step-icon ${result.futureSessionPassedBefore ? 'info' : 'ok'}`}>
+            <Bot size={16} />
+          </div>
+          <div>
+            <strong>The agent simply makes a new session</strong>
+            <p>
+              {result.futureSessionPassedBefore
+                ? '⚠ New JTI verifies fine — revoking sessions one by one cannot stop a compromised agent'
+                : '✓ Future session unexpectedly failed'}
+            </p>
+          </div>
+        </div>
+
+        <div className="timeline-step">
+          <div className="step-icon info"><ShieldX size={16} /></div>
+          <div>
+            <strong>One-call revocation — revokeAttestation(A.jti)</strong>
+            <p>
+              The mandate's JTI <code>{shorten(result.attestationJti, 8)}</code>{' '}
+              enters the same revocation store; verifiers check every JTI in
+              the presented chain, not only the session id.
+            </p>
+          </div>
+        </div>
+
+        <div className="timeline-step">
+          <div className={`step-icon ${result.futureSessionFailedAfter ? 'ok' : 'err'}`}>
+            {result.futureSessionFailedAfter ? <ShieldX size={16} /> : <XCircle size={16} />}
+          </div>
+          <div>
+            <strong>Future session verified (after attestation revocation)</strong>
+            <p>
+              {result.futureSessionFailedAfter
+                ? '✓ MANDATE DEAD — the agent is disabled across every service it touches, including all future sessions'
+                : '✗ Expected the mandate revocation to kill future sessions'}
             </p>
           </div>
         </div>

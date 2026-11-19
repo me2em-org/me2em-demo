@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Key,
@@ -8,16 +8,42 @@ import {
   Check,
   Wallet,
   Mail,
+  Loader2,
+  Home,
+  Dumbbell,
+  Briefcase,
 } from 'lucide-react';
-import type {
-  HumanResult,
-  HumanHandleInfo,
+import type { Identity } from '@me2em/core';
+import {
+  HumanEngine,
+  CONTEXT_ORDER,
+  type HumanRootIdentity,
+  type HumanHandleInfo,
+  type ContextName,
 } from '../scenarios/human';
 
 interface Props {
-  result: HumanResult | null;
-  loading: boolean;
+  identity: Identity | null;
+  seedBytes: Uint8Array | null;
 }
+
+const CONTEXT_ICON: Record<ContextName, typeof Briefcase> = {
+  work: Briefcase,
+  family: Home,
+  gym: Dumbbell,
+};
+
+const CONTEXT_LABEL: Record<ContextName, string> = {
+  work: 'Create work handle',
+  family: 'Create family handle',
+  gym: 'Create gym handle',
+};
+
+const CONTEXT_STEP: Record<ContextName, string> = {
+  work: '1',
+  family: '2',
+  gym: '3',
+};
 
 function CopyBtn({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
@@ -129,28 +155,59 @@ function HandleCard({ ctx }: { ctx: HumanHandleInfo }) {
   );
 }
 
-export default function ScenarioHuman({ result, loading }: Props) {
-  if (loading) {
-    return (
-      <div className="scenario-loading">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
-        >
-          <Key size={24} />
-        </motion.div>
-        <p>Deriving root Identity and context Handles…</p>
-      </div>
-    );
-  }
+function FlowBreadcrumb({ created }: { created: ContextName[] }) {
+  return (
+    <div className="flow-breadcrumb">
+      {CONTEXT_ORDER.map((name, i) => (
+        <span key={name} className={`flow-step ${i < created.length ? 'done' : ''}`}>
+          {i > 0 && <span className="flow-arrow">→</span>}
+          {name}
+        </span>
+      ))}
+    </div>
+  );
+}
 
-  if (!result) {
-    return (
-      <div className="scenario-placeholder">
-        <p>Run the scenario to derive work, family, and gym Handles.</p>
-      </div>
-    );
-  }
+export default function ScenarioHuman({ identity, seedBytes }: Props) {
+  const engineRef = useRef<HumanEngine | null>(null);
+  const getEngine = () => {
+    if (engineRef.current === null) engineRef.current = new HumanEngine();
+    return engineRef.current;
+  };
+  const [root, setRoot] = useState<HumanRootIdentity | null>(null);
+  const [contexts, setContexts] = useState<HumanHandleInfo[]>([]);
+  const [busy, setBusy] = useState<ContextName | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      engineRef.current?.dispose();
+      engineRef.current = null;
+    };
+  }, []);
+
+  const created: ContextName[] = contexts.map((c) => c.name as ContextName);
+  // Progressive reveal: only the NEXT handle in line has a button —
+  // work first, then family, then gym.
+  const next = CONTEXT_ORDER.find((name) => !created.includes(name)) ?? null;
+
+  const createNext = async (name: ContextName) => {
+    if (!identity || !seedBytes) return;
+    setBusy(name);
+    setError(null);
+    try {
+      const engine = getEngine();
+      if (root === null) {
+        setRoot(await engine.init(identity, seedBytes));
+      }
+      const ctx = await engine.deriveContext(name);
+      setContexts((prev) => [...prev, ctx]);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(null);
+    }
+  };
 
   return (
     <div className="scenario-result">
@@ -159,29 +216,75 @@ export default function ScenarioHuman({ result, loading }: Props) {
         <div>
           <h3>Multi-Context Identity</h3>
           <p className="scenario-desc">
-            One root Identity → three isolated Handles. Each context has its
-            own profile, keypair, and Solana wallet — no shared credentials.
+            One root Identity → isolated Handles, created one at a time. Each
+            context gets its own profile, keypair, and Solana wallet — no
+            shared credentials.
           </p>
         </div>
       </div>
 
-      <p className="derive-note">
-        ↓ Each Handle is derived deterministically from the root keypair —
-        deriving one reveals nothing about the others.
-      </p>
+      <FlowBreadcrumb created={created} />
 
-      <div className="context-cards">
-        {result.contexts.map((ctx) => (
-          <HandleCard key={ctx.name} ctx={ctx} />
-        ))}
-      </div>
+      {next && (
+        <div className="stage-block">
+          <button
+            className="primary-btn stage-btn"
+            disabled={busy !== null}
+            onClick={() => createNext(next)}
+          >
+            {busy === next ? (
+              <Loader2 size={16} className="spin" />
+            ) : (
+              (() => { const Icon = CONTEXT_ICON[next]; return <Icon size={16} />; })()
+            )}
+            {CONTEXT_STEP[next]} · {CONTEXT_LABEL[next]}
+          </button>
+        </div>
+      )}
 
-      <div className="scenario-footer">
-        <Radio size={14} />
-        <span>
-          Root public key: <code>{result.root.pubKeyHex.slice(0, 24)}…</code>
-        </span>
-      </div>
+      {next === 'family' && (
+        <p className="derive-note">
+          ✓ Work handle ready. Deriving one handle reveals nothing about the
+          others — the family context is a fresh keypair from the same seed.
+        </p>
+      )}
+      {next === 'gym' && (
+        <p className="derive-note">
+          ✓ Family handle ready. One more derivation and you have a fully
+          separate sports identity.
+        </p>
+      )}
+
+      {error && (
+        <div className="negative-card error"><CheckCircle2 size={14} /> {error}</div>
+      )}
+
+      {contexts.length > 0 && (
+        <div className="context-cards">
+          {contexts.map((ctx) => (
+            <HandleCard key={ctx.name} ctx={ctx} />
+          ))}
+        </div>
+      )}
+
+      {contexts.length > 0 && (
+        <div className="scenario-footer">
+          <Radio size={14} />
+          <span>
+            Root public key: <code>{(root?.pubKeyHex ?? '').slice(0, 24)}…</code>
+          </span>
+        </div>
+      )}
+
+      {!next && contexts.length > 0 && (
+        <div className="scenario-footer">
+          <Key size={14} />
+          <span>
+            All three contexts derived — same seed, same order of derivation
+            paths, zero shared credentials between them.
+          </span>
+        </div>
+      )}
     </div>
   );
 }

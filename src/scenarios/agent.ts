@@ -14,6 +14,10 @@ export interface AgentResult {
   sessionVerifiedBefore: boolean;
   sessionVerifiedAfter: boolean;
   revoked: boolean;
+  attestationJti: string;
+  futureSessionPassedBefore: boolean;
+  attestationRevoked: boolean;
+  futureSessionFailedAfter: boolean;
   rootPubKeyHex: string;
 }
 
@@ -104,6 +108,64 @@ export async function runAgentScenario(identity: Identity): Promise<AgentResult>
     logger.warn('Session REVOKED — verification now fails', msg.slice(0, 80));
   }
 
+  // 9. The agent makes a NEW session (a "future" one): session revocation
+  //    only killed session1 — the mandate itself is still alive.
+  logger.info('Agent creates a future session (new JTI, mandate still valid)…');
+  const session2 = await Session.create(agentSub, {
+    audience: 'booking.api.example',
+    scopes: ['travel:search'],
+    ttl: 3600,
+  });
+  let futureSessionPassedBefore = false;
+  try {
+    await Session.verifyAttested(
+      session2.token,
+      identity.getPublicKey(),
+      [A.token, B.token],
+      'booking.api.example',
+      revocationChecker,
+    );
+    futureSessionPassedBefore = true;
+    logger.warn(
+      'Future session VERIFIED — session revocation alone cannot stop the agent',
+    );
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    logger.error('Future session failed unexpectedly', msg.slice(0, 80));
+  }
+
+  // 10. UC-1 one-call revocation: revokeAttestation(A.jti) — the ATTESTATION
+  //     jti goes into the same revocation store. Every verifier that checks
+  //     jti (session AND chain entries) stops trusting the agent instantly.
+  logger.info('Owner revokes the ATTESTATION itself — one call, revokeAttestation(A.jti)…');
+  revokedIds.add(A.jti);
+
+  // A real service checks every jti it sees: the session id AND each jti in
+  // the presented attestation chain.
+  const chainJtis = [A.jti, B.jti];
+  const attestationChecker = {
+    isRevoked: async (sid: string) =>
+      revokedIds.has(sid) || chainJtis.some((j) => revokedIds.has(j)),
+  };
+
+  // 11. Re-verify the FUTURE session with the chain-aware checker — must fail.
+  logger.info('Verifying future session (after attestation revocation)…');
+  let futureSessionFailedAfter = false;
+  try {
+    await Session.verifyAttested(
+      session2.token,
+      identity.getPublicKey(),
+      [A.token, B.token],
+      'booking.api.example',
+      attestationChecker,
+    );
+    logger.error('Expected the mandate to be dead, but verification passed');
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    futureSessionFailedAfter = true;
+    logger.warn('Mandate DEAD — future sessions fail too', msg.slice(0, 80));
+  }
+
   return {
     agentHandleId: agentHandle.getId(),
     agentSubHandleId: agentSub.getId(),
@@ -112,6 +174,10 @@ export async function runAgentScenario(identity: Identity): Promise<AgentResult>
     sessionVerifiedBefore: verified1,
     sessionVerifiedAfter: verified2,
     revoked: true,
+    attestationJti: A.jti,
+    futureSessionPassedBefore,
+    attestationRevoked: true,
+    futureSessionFailedAfter,
     rootPubKeyHex: Array.from(identity.getPublicKey())
       .map((b: number) => b.toString(16).padStart(2, '0'))
       .join(''),
