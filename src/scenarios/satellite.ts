@@ -183,14 +183,15 @@ export class MCCMission {
       });
 
       const scopes = [...new Set(spec.instruments.flatMap((it) => it.scopes))];
-      logger.info(`Attesting satellite Handle "${spec.name}" (Mission Control → satellite)…`);
-      const A = await identity.attestHandle(spec.name, {
+      const grant = {
         audiences: [PORTAL_AUDIENCE],
         scopes,
         maxSessionTtl: 3600,
         subNamePatterns: ['inst-*'],
-      });
+      };
 
+      // Wallet is derived first so the attestation can carry the v1.2 §6
+      // wallet-binding extensions (subjectWallet / chain / path).
       const wallet = await this.walletTree.deriveWallet(spec.walletIndex);
       const descriptor: WalletDescriptor = {
         chain: SOLANA_CHAINS.devnet,
@@ -199,6 +200,15 @@ export class MCCMission {
         label: spec.name,
       };
       wallet.privateKey.fill(0); // wipe per API contract (fresh buffer)
+
+      logger.info(
+        `Attesting satellite Handle "${spec.name}" (Mission Control → satellite, wallet-bound)…`,
+      );
+      const A = await Attestation.issue(identity, handle.getPublicKey(), spec.name, grant, {
+        subjectWallet: descriptor.address,
+        subjectWalletChain: descriptor.chain,
+        subjectWalletPath: descriptor.derivationPath,
+      });
 
       const entityRef = { id: handle.getId(), kind: 'handle' as const, name: spec.name };
       let walletBindingOk = false;
