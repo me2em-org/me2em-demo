@@ -1353,3 +1353,139 @@ body {
   font-size: 1rem;
   color: var(--text);
 }
+
+/* ── Agent Commerce: wire panel, artifacts, enforcement ── */
+.wire-panel {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wire-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed var(--border);
+}
+
+.wire-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  border-left: 2px solid transparent;
+  padding-left: 8px;
+}
+
+.wire-line.kind-req { border-left-color: #60a5fa; }
+.wire-line.kind-res { border-left-color: #34d399; }
+.wire-line.kind-ok  { border-left-color: #34d399; }
+.wire-line.kind-warn { border-left-color: #fbbf24; }
+.wire-line.kind-sim { border-left-color: #a78bfa; }
+
+.wire-actor {
+  flex-shrink: 0;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  border-radius: 6px;
+  padding: 2px 6px;
+  margin-top: 1px;
+}
+
+.wire-actor.actor-agent { color: #93c5fd; background: rgba(96, 165, 250, 0.12); }
+.wire-actor.actor-seller { color: #6ee7b7; background: rgba(52, 211, 153, 0.12); }
+.wire-actor.actor-facilitator { color: #c4b5fd; background: rgba(167, 139, 250, 0.14); }
+
+.wire-body { display: flex; flex-direction: column; }
+.wire-line.kind-warn .wire-body span:first-child { color: #fbbf24; }
+.wire-line.kind-sim .wire-body span:first-child { color: #c4b5fd; }
+
+.wire-detail {
+  color: var(--text-dim);
+  font-size: 0.72rem;
+}
+
+.sim-note {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.artifact-card {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.artifact-card summary {
+  cursor: pointer;
+  padding: 9px 12px;
+  font-size: 0.82rem;
+  color: var(--accent-light);
+  user-select: none;
+}
+
+.artifact-card pre {
+  margin: 0;
+  padding: 0 12px 10px;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--text-dim);
+  overflow-x: auto;
+}
+
+.receipt-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--text);
+  margin: 10px 0 0;
+}
+
+.receipt-line svg { color: #34d399; flex-shrink: 0; }
+
+.negative-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  background: rgba(52, 211, 153, 0.06);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 12px 0;
+  font-size: 0.85rem;
+}
+
+.negative-card > svg { color: #34d399; flex-shrink: 0; margin-top: 2px; }
+
+.negative-card.error {
+  border-color: rgba(248, 113, 113, 0.4);
+  background: rgba(248, 113, 113, 0.06);
+}
+
+.negative-card.error > svg { color: #f87171; }
+
+.negative-detail {
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  margin-top: 4px;
+}

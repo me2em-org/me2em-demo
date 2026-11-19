@@ -5,6 +5,7 @@ import {
   Briefcase,
   Satellite,
   Bot,
+  CreditCard,
   ChevronRight,
 } from 'lucide-react';
 import { Identity } from '@me2em/core';
@@ -16,9 +17,10 @@ import Logger from './components/Logger';
 import ScenarioHuman from './components/ScenarioHuman';
 import ScenarioSatellite from './components/ScenarioSatellite';
 import ScenarioAgent from './components/ScenarioAgent';
+import ScenarioCommerce from './components/ScenarioCommerce';
 import './App.css';
 
-type ScenarioId = 'human' | 'satellite' | 'agent';
+type ScenarioId = 'human' | 'satellite' | 'agent' | 'commerce';
 
 const scenarioMeta: Record<ScenarioId, { icon: React.ReactNode; label: string; desc: string }> = {
   human: {
@@ -35,6 +37,11 @@ const scenarioMeta: Record<ScenarioId, { icon: React.ReactNode; label: string; d
     icon: <Bot size={18} />,
     label: 'AI Agent',
     desc: 'Mandate & revocation',
+  },
+  commerce: {
+    icon: <CreditCard size={18} />,
+    label: 'Agent Commerce',
+    desc: 'Paid APIs · x402',
   },
 };
 
@@ -63,7 +70,7 @@ export default function App() {
 
   const handleRunScenario = (id: ScenarioId) => {
     setActiveScenario(id);
-    if (id === 'satellite') return;
+    if (id === 'satellite' || id === 'commerce') return;
     scenarioMap[id].run();
   };
 
@@ -93,7 +100,7 @@ export default function App() {
                       key={id}
                       className={`scenario-tab ${activeScenario === id ? 'active' : ''}`}
                       onClick={() => handleRunScenario(id)}
-                      disabled={id !== 'satellite' && scenarioMap[id].loading}
+                      disabled={id !== 'satellite' && id !== 'commerce' && scenarioMap[id].loading}
                     >
                       {scenarioMeta[id].icon}
                       <span>{scenarioMeta[id].label}</span>
@@ -124,6 +131,12 @@ export default function App() {
                   )}
                   {activeScenario === 'satellite' && (
                     <ScenarioSatellite
+                      identity={identity}
+                      seedBytes={seedBytes}
+                    />
+                  )}
+                  {activeScenario === 'commerce' && (
+                    <ScenarioCommerce
                       identity={identity}
                       seedBytes={seedBytes}
                     />
