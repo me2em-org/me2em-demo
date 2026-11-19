@@ -1203,3 +1203,153 @@ body {
 .seed-info p {
   margin: 0;
 }
+
+/* ── Satellite scenario: flow helpers ── */
+.flow-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+
+.flow-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.55;
+}
+
+.flow-step.done {
+  opacity: 1;
+  color: var(--accent-light);
+}
+
+.flow-arrow {
+  color: var(--text-subtle);
+}
+
+.stage-block {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 4px;
+}
+
+.stage-btn {
+  align-self: flex-start;
+}
+
+.mcc-card {
+  border-color: var(--accent);
+}
+
+.mcc-note {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-dim);
+}
+
+.muted {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+.price {
+  font-family: var(--mono);
+  color: var(--accent-light);
+  font-size: 0.85rem;
+}
+
+.badge-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.market-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.market-group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.market-group-title svg {
+  color: var(--accent-light);
+}
+
+.instrument-card .buy-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+/* ── Access certificate (the sale artifact) ── */
+.cert-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid var(--accent);
+  background: var(--surface-2);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+
+.cert-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--border);
+}
+
+.cert-icon {
+  color: var(--accent-light);
+}
+
+.cert-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.cert-subtitle {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.cert-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px dashed var(--border);
+  padding-top: 10px;
+}
+
+.scope-chip {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--accent-light);
+  background: rgba(99, 102, 241, 0.1);
+  border-radius: 10px;
+  padding: 2px 8px;
+}
+
+.cert-section-title {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  color: var(--text);
+}

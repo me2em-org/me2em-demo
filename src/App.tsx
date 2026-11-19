@@ -10,7 +10,6 @@ import {
 import { Identity } from '@me2em/core';
 import { useScenario } from './hooks/useScenario';
 import { runHumanScenario } from './scenarios/human';
-import { runSatelliteScenario } from './scenarios/satellite';
 import { runAgentScenario } from './scenarios/agent';
 import SeedIsland from './components/sandbox/SeedIsland';
 import Logger from './components/Logger';
@@ -30,7 +29,7 @@ const scenarioMeta: Record<ScenarioId, { icon: React.ReactNode; label: string; d
   satellite: {
     icon: <Satellite size={18} />,
     label: 'Satellite',
-    desc: 'Selling capacity',
+    desc: 'Tasking marketplace',
   },
   agent: {
     icon: <Bot size={18} />,
@@ -53,19 +52,18 @@ export default function App() {
   );
 
   const humanScenario = useScenario(() => runHumanScenario(identity!, seedBytes!));
-  const satelliteScenario = useScenario(() =>
-    runSatelliteScenario(identity!, seedBytes!),
-  );
   const agentScenario = useScenario(() => runAgentScenario(identity!));
 
+  // Satellite scenario is interactive and manages its own stages inside
+  // ScenarioSatellite; the other two are one-shot runs.
   const scenarioMap = {
     human: humanScenario,
-    satellite: satelliteScenario,
     agent: agentScenario,
   };
 
   const handleRunScenario = (id: ScenarioId) => {
     setActiveScenario(id);
+    if (id === 'satellite') return;
     scenarioMap[id].run();
   };
 
@@ -95,7 +93,7 @@ export default function App() {
                       key={id}
                       className={`scenario-tab ${activeScenario === id ? 'active' : ''}`}
                       onClick={() => handleRunScenario(id)}
-                      disabled={scenarioMap[id].loading}
+                      disabled={id !== 'satellite' && scenarioMap[id].loading}
                     >
                       {scenarioMeta[id].icon}
                       <span>{scenarioMeta[id].label}</span>
@@ -126,8 +124,8 @@ export default function App() {
                   )}
                   {activeScenario === 'satellite' && (
                     <ScenarioSatellite
-                      result={satelliteScenario.result}
-                      loading={satelliteScenario.loading}
+                      identity={identity}
+                      seedBytes={seedBytes}
                     />
                   )}
                   {activeScenario === 'agent' && (
